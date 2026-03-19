@@ -1,0 +1,396 @@
+.page-shell {
+  display: grid;
+  gap: 24px;
+  padding: 32px;
+}
+
+.hero-panel,
+.controls-panel,
+.summary-grid,
+.months-panel,
+.results-panel,
+.status-banner {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.hero-panel {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.hero-copy,
+.hero-stats,
+.controls-panel,
+.summary-card,
+.month-card,
+.result-card,
+.status-banner {
+  background: rgba(255, 248, 235, 0.92);
+  border: 1px solid rgba(32, 23, 8, 0.08);
+  box-shadow: 0 18px 60px rgba(50, 32, 8, 0.08);
+}
+
+.hero-copy {
+  border-radius: 28px;
+  padding: 32px;
+}
+
+.hero-copy h1,
+.section-heading h2 {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.7rem, 5vw, 4.8rem);
+  line-height: 0.95;
+  max-width: 12ch;
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  color: #9d4e13;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-text,
+.section-note,
+.summary-card p,
+.month-card p,
+.stat-footnote,
+.status-banner p {
+  color: #5b5147;
+}
+
+.hero-text {
+  margin-top: 18px;
+  max-width: 58ch;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.hero-stats {
+  display: grid;
+  gap: 14px;
+  border-radius: 28px;
+  padding: 18px;
+}
+
+.stat-card,
+.summary-card,
+.month-card {
+  border-radius: 22px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.accent-card {
+  background: linear-gradient(180deg, rgba(191, 101, 25, 0.18), rgba(255, 255, 255, 0.72));
+}
+
+.stat-label,
+.summary-label,
+.month-label,
+.price-label,
+.control-label,
+.facts-grid dt {
+  display: block;
+  margin-bottom: 8px;
+  color: #7c6a57;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stat-card strong,
+.summary-card strong,
+.month-card strong,
+.price-box strong {
+  color: #16110a;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.4rem;
+}
+
+.controls-panel,
+.months-panel,
+.results-panel {
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.status-banner {
+  border-radius: 24px;
+  padding: 16px 20px;
+}
+
+.status-banner strong {
+  color: #9d4e13;
+}
+
+.control-group + .control-group {
+  margin-top: 20px;
+}
+
+.segmented,
+.chip-set,
+.inline-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented button,
+.chip,
+.lookup-bar a,
+.lookup-bar button {
+  border: 1px solid rgba(39, 29, 14, 0.12);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #201708;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.segmented button {
+  padding: 11px 18px;
+}
+
+.segmented button.is-active,
+.chip.is-active {
+  background: #22160c;
+  border-color: #22160c;
+  color: #fff8ef;
+}
+
+.chip {
+  padding: 10px 14px;
+}
+
+.checkbox-row,
+.sort-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.sort-row select {
+  border: 1px solid rgba(39, 29, 14, 0.14);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #201708;
+  font: inherit;
+  padding: 11px 16px;
+}
+
+.summary-grid,
+.month-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.month-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-note {
+  max-width: 38ch;
+  text-align: right;
+}
+
+.month-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  color: #2b1d0c;
+  font-weight: 700;
+}
+
+.results-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.result-card {
+  position: relative;
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.rank-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  min-width: 52px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: #201708;
+  color: #fff8ef;
+  font-weight: 700;
+  text-align: center;
+}
+
+.result-header {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: start;
+}
+
+.result-reference {
+  margin: 0 0 10px;
+  color: #8b765b;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.84rem;
+}
+
+.result-header h3 {
+  margin: 0;
+  color: #16110a;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.75rem;
+  letter-spacing: -0.04em;
+}
+
+.result-subtitle {
+  margin: 10px 0 0;
+  color: #5e5449;
+}
+
+.price-box {
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 16px;
+  text-align: right;
+}
+
+.price-footnote {
+  display: block;
+  margin-top: 8px;
+  color: #736758;
+}
+
+.result-chip-row {
+  margin-top: 18px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.info-chip {
+  border-radius: 999px;
+  background: rgba(157, 78, 19, 0.12);
+  color: #8f4616;
+  padding: 8px 12px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.facts-grid div {
+  border-top: 1px solid rgba(39, 29, 14, 0.1);
+  padding-top: 14px;
+}
+
+.facts-grid dd {
+  margin: 0;
+  color: #22160c;
+  line-height: 1.5;
+}
+
+.lookup-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lookup-bar a,
+.lookup-bar button {
+  padding: 12px 16px;
+  text-decoration: none;
+}
+
+.lookup-bar a:hover,
+.lookup-bar button:hover,
+.segmented button:hover,
+.chip:hover {
+  border-color: rgba(157, 78, 19, 0.48);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1024px) {
+  .page-shell {
+    padding: 18px;
+  }
+
+  .hero-panel,
+  .summary-grid,
+  .month-grid,
+  .result-header,
+  .facts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .section-note,
+  .price-box {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-copy,
+  .controls-panel,
+  .months-panel,
+  .results-panel,
+  .result-card {
+    padding: 18px;
+  }
+
+  .hero-copy h1 {
+    max-width: none;
+  }
+}
