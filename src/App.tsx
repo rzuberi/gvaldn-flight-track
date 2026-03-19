@@ -11,13 +11,11 @@ import {
   formatDateLong,
   formatDateRange,
   formatHourLabel,
-  formatMonthLabel,
   formatShortDate,
-  getMonthLeaders,
   hourOptions,
   londonAirports,
-  weekdays,
   weekdayLabels,
+  weekdays,
   type Direction,
   type FlightCandidate,
   type SortMode,
@@ -55,11 +53,13 @@ function App() {
     returnDays,
     sortMode,
   })
-  const monthLeaders = getMonthLeaders(candidates)
+
   const topResults = candidates.slice(0, 24)
   const cheapest = candidates[0]
-  const medianPrice =
-    candidates[Math.floor(candidates.length / 2)]?.price ?? cheapest?.price ?? 0
+  const dateWindowLabel =
+    candidates.length > 0
+      ? `${formatDateLong(candidates[0].outboundDate)} to ${formatDateLong(candidates[candidates.length - 1].inboundDate)}`
+      : 'No matching trips'
 
   const toggleWeekday = (
     day: Weekday,
@@ -102,79 +102,39 @@ function App() {
     }
   }
 
-  const dateWindowLabel =
-    candidates.length > 0
-      ? `${formatDateLong(candidates[0].outboundDate)} to ${formatDateLong(candidates[candidates.length - 1].inboundDate)}`
-      : 'No matching trips'
-
   return (
     <main className="page-shell">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <p className="eyebrow">GVA / London direct tracker</p>
-          <h1>Pick the days and hours you like, then jump to direct airline links.</h1>
-          <p className="hero-text">
-            This version only models <strong>direct flights</strong>. You can now
-            choose acceptable outbound days, acceptable return days, an outbound
-            departure window, and a return arrival window. Routes can mix
-            airlines, so you might leave on <strong>easyJet</strong> and come back
-            on <strong>SWISS</strong>.
-          </p>
-        </div>
-
-        <div className="hero-stats">
-          <div className="stat-card accent-card">
-            <span className="stat-label">Direction</span>
-            <strong>{directionLabels[direction]}</strong>
-            <span className="stat-footnote">Switchable below</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Date window</span>
-            <strong>{dateWindowLabel}</strong>
-            <span className="stat-footnote">Rolling 12 months from today</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Current cheapest</span>
-            <strong>{cheapest ? `GBP ${cheapest.price}` : 'No matches'}</strong>
-            <span className="stat-footnote">
-              {cheapest
-                ? `${cheapest.routeCode} · ${formatDateRange(cheapest)}`
-                : 'Adjust filters'}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section className="status-banner">
-        <p>
-          <strong>Current mode:</strong> direct-flight demo rankings with airline-first
-          links where possible. Exact live airline booking deeplinks still need a
-          server-side fare/search integration.
+      <section className="hero-panel compact-hero">
+        <p className="eyebrow">GVA / London direct tracker</p>
+        <h1>Find Direct Flights: Geneva ⇄ London</h1>
+        <p className="hero-text compact-text">
+          Filter by your preferred days and times. See direct options first, then
+          open the clearest booking path for each itinerary.
         </p>
       </section>
 
-      <section className="controls-panel">
-        <div className="control-group">
-          <span className="control-label">Direction</span>
-          <div className="segmented">
-            <button
-              className={direction === 'gva-to-london' ? 'is-active' : ''}
-              onClick={() => setDirection('gva-to-london')}
-              type="button"
-            >
-              GVA to London
-            </button>
-            <button
-              className={direction === 'london-to-gva' ? 'is-active' : ''}
-              onClick={() => setDirection('london-to-gva')}
-              type="button"
-            >
-              London to GVA
-            </button>
+      <section className="search-panel">
+        <div className="primary-controls">
+          <div className="control-group">
+            <span className="control-label">Direction</span>
+            <div className="segmented">
+              <button
+                className={direction === 'gva-to-london' ? 'is-active' : ''}
+                onClick={() => setDirection('gva-to-london')}
+                type="button"
+              >
+                GVA to London
+              </button>
+              <button
+                className={direction === 'london-to-gva' ? 'is-active' : ''}
+                onClick={() => setDirection('london-to-gva')}
+                type="button"
+              >
+                London to GVA
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="control-grid">
           <div className="control-group">
             <span className="control-label">Leave on</span>
             <div className="chip-set">
@@ -208,112 +168,148 @@ function App() {
           </div>
         </div>
 
-        <div className="control-grid">
-          <div className="control-group">
-            <span className="control-label">Leave between</span>
-            <div className="time-grid">
-              <label className="time-field">
-                <span>From</span>
-                <select
-                  onChange={(event) => {
-                    const next = Number(event.target.value)
-                    setOutboundStartHour(next)
-                    if (next >= outboundEndHour) {
-                      setOutboundEndHour(next + 1)
+        <details className="advanced-panel">
+          <summary>Advanced filters</summary>
+          <div className="advanced-grid">
+            <div className="control-group">
+              <span className="control-label">Leave between</span>
+              <div className="time-grid">
+                <label className="time-field">
+                  <span>From</span>
+                  <select
+                    onChange={(event) => {
+                      const next = Number(event.target.value)
+                      setOutboundStartHour(next)
+                      if (next >= outboundEndHour) {
+                        setOutboundEndHour(next + 1)
+                      }
+                    }}
+                    value={outboundStartHour}
+                  >
+                    {hourOptions
+                      .filter((hour) => hour < outboundEndHour)
+                      .map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHourLabel(hour)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="time-field">
+                  <span>To</span>
+                  <select
+                    onChange={(event) => setOutboundEndHour(Number(event.target.value))}
+                    value={outboundEndHour}
+                  >
+                    {hourOptions
+                      .filter((hour) => hour > outboundStartHour)
+                      .map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHourLabel(hour)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="control-group">
+              <span className="control-label">Return arrival between</span>
+              <div className="time-grid">
+                <label className="time-field">
+                  <span>From</span>
+                  <select
+                    onChange={(event) => {
+                      const next = Number(event.target.value)
+                      setReturnStartHour(next)
+                      if (next >= returnEndHour) {
+                        setReturnEndHour(next + 1)
+                      }
+                    }}
+                    value={returnStartHour}
+                  >
+                    {hourOptions
+                      .filter((hour) => hour < returnEndHour)
+                      .map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHourLabel(hour)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="time-field">
+                  <span>To</span>
+                  <select
+                    onChange={(event) => setReturnEndHour(Number(event.target.value))}
+                    value={returnEndHour}
+                  >
+                    {hourOptions
+                      .filter((hour) => hour > returnStartHour)
+                      .map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHourLabel(hour)}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="control-group">
+              <span className="control-label">London airports</span>
+              <div className="chip-set">
+                {londonAirports.map((airportCode) => (
+                  <button
+                    className={
+                      selectedAirports.includes(airportCode)
+                        ? 'chip is-active'
+                        : 'chip'
                     }
-                  }}
-                  value={outboundStartHour}
-                >
-                  {hourOptions
-                    .filter((hour) => hour < outboundEndHour)
-                    .map((hour) => (
-                      <option key={hour} value={hour}>
-                        {formatHourLabel(hour)}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className="time-field">
-                <span>To</span>
-                <select
-                  onChange={(event) => setOutboundEndHour(Number(event.target.value))}
-                  value={outboundEndHour}
-                >
-                  {hourOptions
-                    .filter((hour) => hour > outboundStartHour)
-                    .map((hour) => (
-                      <option key={hour} value={hour}>
-                        {formatHourLabel(hour)}
-                      </option>
-                    ))}
-                </select>
-              </label>
+                    key={airportCode}
+                    onClick={() => toggleAirport(airportCode)}
+                    type="button"
+                  >
+                    {airportCode}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+        </details>
+      </section>
 
-          <div className="control-group">
-            <span className="control-label">Return arrival between</span>
-            <div className="time-grid">
-              <label className="time-field">
-                <span>From</span>
-                <select
-                  onChange={(event) => {
-                    const next = Number(event.target.value)
-                    setReturnStartHour(next)
-                    if (next >= returnEndHour) {
-                      setReturnEndHour(next + 1)
-                    }
-                  }}
-                  value={returnStartHour}
-                >
-                  {hourOptions
-                    .filter((hour) => hour < returnEndHour)
-                    .map((hour) => (
-                      <option key={hour} value={hour}>
-                        {formatHourLabel(hour)}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className="time-field">
-                <span>To</span>
-                <select
-                  onChange={(event) => setReturnEndHour(Number(event.target.value))}
-                  value={returnEndHour}
-                >
-                  {hourOptions
-                    .filter((hour) => hour > returnStartHour)
-                    .map((hour) => (
-                      <option key={hour} value={hour}>
-                        {formatHourLabel(hour)}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            </div>
-          </div>
+      <section className="active-summary">
+        <div>
+          <span className="control-label">Active search</span>
+          <strong>{directionLabels[direction]}</strong>
+          <p>
+            Leave {formatDaySet(outboundDays)} · Return {formatDaySet(returnDays)} ·
+            Outbound {formatHourLabel(outboundStartHour)}-{formatHourLabel(outboundEndHour)} ·
+            Return arrives {formatHourLabel(returnStartHour)}-{formatHourLabel(returnEndHour)}
+          </p>
         </div>
-
-        <div className="control-group">
-          <span className="control-label">London airports</span>
-          <div className="chip-set">
-            {londonAirports.map((airportCode) => (
-              <button
-                className={
-                  selectedAirports.includes(airportCode) ? 'chip is-active' : 'chip'
-                }
-                key={airportCode}
-                onClick={() => toggleAirport(airportCode)}
-                type="button"
-              >
-                {airportCode}
-              </button>
-            ))}
-          </div>
+        <div>
+          <span className="control-label">Coverage</span>
+          <strong>{candidates.length} direct options</strong>
+          <p>
+            {selectedAirports.length} airport{selectedAirports.length === 1 ? '' : 's'} ·{' '}
+            {dateWindowLabel}
+          </p>
         </div>
+        <div>
+          <span className="control-label">Best visible price</span>
+          <strong>{cheapest ? `GBP ${cheapest.price}` : 'No matches'}</strong>
+          <p>{cheapest ? `${cheapest.routeCode} · ${formatDateRange(cheapest)}` : 'Widen filters'}</p>
+        </div>
+      </section>
 
-        <div className="control-group inline-group">
-          <div className="static-note">Direct flights only</div>
+      <section className="results-panel">
+        <div className="results-toolbar">
+          <div>
+            <p className="eyebrow">Results</p>
+            <h2>{topResults.length} trips to check now</h2>
+          </div>
+
           <label className="sort-row">
             <span className="control-label">Sort</span>
             <select
@@ -330,79 +326,11 @@ function App() {
             </select>
           </label>
         </div>
-      </section>
-
-      <section className="summary-grid">
-        <article className="summary-card">
-          <span className="summary-label">Direct combinations</span>
-          <strong>{candidates.length}</strong>
-          <p>
-            {outboundDays.length} outbound day
-            {outboundDays.length === 1 ? '' : 's'} and {returnDays.length} return day
-            {returnDays.length === 1 ? '' : 's'}
-          </p>
-        </article>
-
-        <article className="summary-card">
-          <span className="summary-label">Median ranked fare</span>
-          <strong>GBP {medianPrice}</strong>
-          <p>Across the current day and time filters.</p>
-        </article>
-
-        <article className="summary-card">
-          <span className="summary-label">Time windows</span>
-          <strong>
-            {formatHourLabel(outboundStartHour)} to {formatHourLabel(outboundEndHour)}
-          </strong>
-          <p>
-            Outbound departure, then return arrival {formatHourLabel(returnStartHour)} to{' '}
-            {formatHourLabel(returnEndHour)}.
-          </p>
-        </article>
-      </section>
-
-      <section className="months-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Month leaders</p>
-            <h2>Best direct option in each upcoming month</h2>
-          </div>
-          <p className="section-note">
-            A fast scan of which months are worth checking first.
-          </p>
-        </div>
-
-        <div className="month-grid">
-          {monthLeaders.map((flight) => (
-            <article className="month-card" key={flight.id}>
-              <span className="month-label">{formatMonthLabel(flight.outboundDate)}</span>
-              <strong>{flight.routeCode}</strong>
-              <p>{formatDateRange(flight)}</p>
-              <p>{buildAirlineSummary(flight)}</p>
-              <div className="month-meta">
-                <span>GBP {flight.price}</span>
-                <span>{flight.stayLengthLabel}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="results-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Ranked results</p>
-            <h2>Top direct picks to verify now</h2>
-          </div>
-          <p className="section-note">
-            Airline-first links appear before Skyscanner and KAYAK.
-          </p>
-        </div>
 
         {topResults.length === 0 ? (
           <div className="empty-state">
-            No direct options match the current weekday and hour filters. Widen the
-            departure or return window and try again.
+            No direct options match the current filters. Widen the time windows or
+            add more weekdays.
           </div>
         ) : (
           <div className="results-list">
@@ -430,119 +358,165 @@ type FlightCardProps = {
 }
 
 function FlightCard({ copiedId, flight, index, onCopy }: FlightCardProps) {
+  const primaryAction = getPrimaryAction(flight)
+
   return (
-    <article className="result-card">
-      <div className="rank-badge">#{index + 1}</div>
+    <article className="result-card compact-card">
+      <div className="card-topline">
+        <span className="rank-badge">#{index + 1}</span>
+        <span className="mini-label">{flight.routeCode}</span>
+        <span className="mini-label">{flight.stayLengthLabel}</span>
+        <span className="mini-label">Direct only</span>
+      </div>
 
-      <div className="result-header">
-        <div>
-          <p className="result-reference">{flight.referenceCode}</p>
-          <h3>{flight.routeTitle}</h3>
+      <div className="result-core">
+        <div className="result-main">
+          <h3>{formatDateRange(flight)}</h3>
           <p className="result-subtitle">
-            {formatDateRange(flight)} · {flight.stayLengthLabel} ·{' '}
-            {buildAirlineSummary(flight)}
+            {flight.routeTitle} · {buildAirlineSummary(flight)}
           </p>
+          <div className="leg-strip">
+            <div className="leg-pill">
+              <span className="leg-label">Out</span>
+              <strong>{flight.outbound.departureLabel}</strong>
+              <span>
+                {flight.outbound.airlineName} · {flight.outbound.flightCode}
+              </span>
+            </div>
+            <div className="leg-pill">
+              <span className="leg-label">Back</span>
+              <strong>{flight.inbound.arrivalLabel}</strong>
+              <span>
+                {flight.inbound.airlineName} · {flight.inbound.flightCode}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div className="price-box">
-          <span className="price-label">Estimated return</span>
+        <div className="price-box compact-price">
+          <span className="price-label">Return fare</span>
           <strong>GBP {flight.price}</strong>
-          <span className="price-footnote">rank score {flight.rankScore}</span>
+          <span className="price-footnote">{flight.totalFlightLabel}</span>
         </div>
       </div>
 
-      <div className="chip-row result-chip-row">
-        {flight.highlights.map((highlight) => (
-          <span className="info-chip" key={highlight}>
-            {highlight}
-          </span>
-        ))}
+      <div className="result-actions">
+        <a
+          className="primary-action"
+          href={primaryAction.url}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {primaryAction.label}
+        </a>
+        <button className="secondary-action" onClick={() => onCopy(flight)} type="button">
+          {copiedId === flight.id ? 'Copied' : 'Copy search'}
+        </button>
       </div>
 
-      <dl className="facts-grid">
-        <div>
-          <dt>Outbound leg</dt>
-          <dd>
-            {formatShortDate(flight.outboundDate)} · {flight.outbound.flightCode} ·{' '}
-            {flight.outbound.airlineName}
-          </dd>
-        </div>
-        <div>
-          <dt>Leave time</dt>
-          <dd>
-            {flight.outbound.departureLabel} to {flight.outbound.arrivalLabel}
-          </dd>
-        </div>
-        <div>
-          <dt>Return leg</dt>
-          <dd>
-            {formatShortDate(flight.inboundDate)} · {flight.inbound.flightCode} ·{' '}
-            {flight.inbound.airlineName}
-          </dd>
-        </div>
-        <div>
-          <dt>Return timing</dt>
-          <dd>
-            {flight.inbound.departureLabel} to {flight.inbound.arrivalLabel}
-          </dd>
-        </div>
-        <div>
-          <dt>Airport pair</dt>
-          <dd>
-            {flight.origin} to {flight.destination}
-          </dd>
-        </div>
-        <div>
-          <dt>Total flight time</dt>
-          <dd>{flight.totalFlightLabel}</dd>
-        </div>
-        <div>
-          <dt>Lookup route</dt>
-          <dd>{flight.lookupAirportName}</dd>
-        </div>
-        <div>
-          <dt>Search prompt</dt>
-          <dd>{buildSearchPrompt(flight)}</dd>
-        </div>
-      </dl>
+      <details className="result-details">
+        <summary>Trip details</summary>
 
-      <div className="lookup-group">
-        <div className="lookup-section">
-          <span className="control-label">Official airline links</span>
-          <div className="lookup-bar">
-            {flight.outbound.officialUrl && (
-              <a href={flight.outbound.officialUrl} rel="noreferrer" target="_blank">
-                Outbound: {flight.outbound.officialLabel}
+        <div className="chip-row result-chip-row">
+          {flight.highlights.map((highlight) => (
+            <span className="info-chip" key={highlight}>
+              {highlight}
+            </span>
+          ))}
+        </div>
+
+        <dl className="facts-grid compact-facts">
+          <div>
+            <dt>Outbound leg</dt>
+            <dd>
+              {formatShortDate(flight.outboundDate)} · {flight.outbound.departureLabel} to{' '}
+              {flight.outbound.arrivalLabel}
+            </dd>
+          </div>
+          <div>
+            <dt>Return leg</dt>
+            <dd>
+              {formatShortDate(flight.inboundDate)} · {flight.inbound.departureLabel} to{' '}
+              {flight.inbound.arrivalLabel}
+            </dd>
+          </div>
+          <div>
+            <dt>Flight codes</dt>
+            <dd>
+              {flight.outbound.flightCode} / {flight.inbound.flightCode}
+            </dd>
+          </div>
+          <div>
+            <dt>Search prompt</dt>
+            <dd>{buildSearchPrompt(flight)}</dd>
+          </div>
+        </dl>
+
+        <div className="lookup-group">
+          <div className="lookup-section">
+            <span className="control-label">Booking links</span>
+            <div className="lookup-bar">
+              {flight.outbound.officialUrl && (
+                <a href={flight.outbound.officialUrl} rel="noreferrer" target="_blank">
+                  Book on {flight.outbound.officialLabel}
+                </a>
+              )}
+              {flight.inbound.officialUrl && (
+                <a href={flight.inbound.officialUrl} rel="noreferrer" target="_blank">
+                  Return on {flight.inbound.officialLabel}
+                </a>
+              )}
+              <a href={buildSkyscannerUrl(flight)} rel="noreferrer" target="_blank">
+                Skyscanner
               </a>
-            )}
-            {flight.inbound.officialUrl && (
-              <a href={flight.inbound.officialUrl} rel="noreferrer" target="_blank">
-                Return: {flight.inbound.officialLabel}
+              <a href={buildKayakUrl(flight)} rel="noreferrer" target="_blank">
+                KAYAK
               </a>
-            )}
+              <a href={buildGoogleSearchUrl(flight)} rel="noreferrer" target="_blank">
+                Google search
+              </a>
+            </div>
           </div>
         </div>
-
-        <div className="lookup-section">
-          <span className="control-label">Cross-check links</span>
-          <div className="lookup-bar">
-            <a href={buildSkyscannerUrl(flight)} rel="noreferrer" target="_blank">
-              Skyscanner
-            </a>
-            <a href={buildKayakUrl(flight)} rel="noreferrer" target="_blank">
-              KAYAK
-            </a>
-            <a href={buildGoogleSearchUrl(flight)} rel="noreferrer" target="_blank">
-              Google search
-            </a>
-            <button onClick={() => onCopy(flight)} type="button">
-              {copiedId === flight.id ? 'Copied' : 'Copy search text'}
-            </button>
-          </div>
-        </div>
-      </div>
+      </details>
     </article>
   )
+}
+
+function formatDaySet(days: Weekday[]) {
+  return days.map((day) => weekdayLabels[day]).join(', ')
+}
+
+function getPrimaryAction(flight: FlightCandidate) {
+  if (
+    flight.outbound.airlineName === flight.inbound.airlineName &&
+    flight.outbound.officialUrl &&
+    flight.outbound.officialUrl === flight.inbound.officialUrl
+  ) {
+    return {
+      label: `Book on ${flight.outbound.airlineName}`,
+      url: flight.outbound.officialUrl,
+    }
+  }
+
+  if (flight.outbound.officialUrl && flight.outbound.airlineName !== flight.inbound.airlineName) {
+    return {
+      label: `Start with ${flight.outbound.airlineName}`,
+      url: flight.outbound.officialUrl,
+    }
+  }
+
+  if (flight.outbound.officialUrl) {
+    return {
+      label: `Book on ${flight.outbound.airlineName}`,
+      url: flight.outbound.officialUrl,
+    }
+  }
+
+  return {
+    label: 'View itinerary',
+    url: buildGoogleSearchUrl(flight),
+  }
 }
 
 export default App
