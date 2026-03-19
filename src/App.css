@@ -26,7 +26,6 @@
 .kicker,
 .control-label,
 .date-label,
-.leg-name,
 .price-label {
   margin: 0;
   color: #5b5b5b;
@@ -55,7 +54,7 @@
   margin-top: 8px;
   font-size: clamp(2.3rem, 5vw, 3.6rem);
   line-height: 0.98;
-  max-width: 10ch;
+  max-width: 12ch;
 }
 
 .lead,
@@ -63,9 +62,8 @@
 .results-note,
 .prototype-note,
 .route-line,
-.return-line,
-.date-block span,
-.leg-row span,
+.route-direction,
+.month-header p,
 .price-meta,
 .empty-state {
   color: #4d4d4d;
@@ -73,7 +71,7 @@
 
 .lead {
   margin: 12px 0 0;
-  max-width: 62ch;
+  max-width: 54ch;
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -98,8 +96,7 @@
 }
 
 .segmented,
-.chip-set,
-.action-links {
+.chip-set {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -107,7 +104,6 @@
 
 .segmented button,
 .chip,
-.action-link,
 .copy-button,
 .time-field select,
 .sort-field select {
@@ -118,7 +114,6 @@
   color: #111111;
   cursor: pointer;
   font: inherit;
-  text-decoration: none;
   transition:
     background 120ms ease,
     border-color 120ms ease,
@@ -127,14 +122,12 @@
 
 .segmented button,
 .chip,
-.action-link,
 .copy-button {
   padding: 11px 14px;
 }
 
 .segmented button.is-active,
-.chip.is-active,
-.action-link.is-primary {
+.chip.is-active {
   background: #111111;
   border-color: #111111;
   color: #ffffff;
@@ -209,11 +202,24 @@
 
 .month-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #ececec;
+}
+
+.month-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.month-orb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  flex: 0 0 auto;
 }
 
 .month-header h3 {
@@ -221,9 +227,25 @@
   text-transform: uppercase;
 }
 
-.month-header p {
-  margin: 0;
-  color: #555555;
+.month-status {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  min-width: 180px;
+}
+
+.month-meter {
+  width: 180px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+}
+
+.month-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
 }
 
 .month-grid {
@@ -248,8 +270,7 @@
   align-items: start;
 }
 
-.route-line,
-.return-line {
+.route-line {
   margin: 0;
   font-size: 0.96rem;
   line-height: 1.5;
@@ -257,11 +278,7 @@
 
 .flight-card h4 {
   margin-top: 6px;
-  font-size: 1.7rem;
-}
-
-.return-line {
-  margin-top: 6px;
+  font-size: 1.55rem;
 }
 
 .price-box {
@@ -287,7 +304,7 @@
 
 .date-block {
   display: grid;
-  gap: 5px;
+  gap: 8px;
   padding: 14px;
   border: 1px solid #e4e4e4;
   border-radius: 14px;
@@ -298,37 +315,40 @@
   font-size: 1.15rem;
 }
 
-.legs-table {
-  display: grid;
-  gap: 10px;
+.route-direction {
+  font-size: 0.94rem;
 }
 
-.leg-row {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 90px minmax(0, 1fr) auto;
+.time-badge {
+  display: inline-flex;
+  width: fit-content;
   align-items: center;
-  padding: 12px 14px;
-  border: 1px solid #e4e4e4;
-  border-radius: 14px;
-  background: #ffffff;
-}
-
-.leg-row strong {
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: #111111;
-  font-size: 1rem;
+  font-weight: 600;
 }
 
-.action-row {
+.airline-name {
+  font-weight: 700;
+}
+
+.airline-easyjet {
+  color: #ff6600;
+}
+
+.airline-ba {
+  color: #075aaa;
+}
+
+.airline-swiss {
+  color: #d52b1e;
+}
+
+.card-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 2px;
-}
-
-.copy-button {
-  white-space: nowrap;
+  justify-content: flex-end;
 }
 
 .empty-state {
@@ -342,6 +362,12 @@
   .flight-card-head,
   .date-strip {
     grid-template-columns: 1fr;
+  }
+
+  .month-header {
+    align-items: start;
+    grid-template-columns: 1fr;
+    display: grid;
   }
 }
 
@@ -357,14 +383,18 @@
     padding: 18px;
   }
 
-  .results-header,
-  .month-header,
-  .action-row {
+  .results-header {
     grid-template-columns: 1fr;
     display: grid;
   }
 
-  .leg-row {
-    grid-template-columns: 1fr;
+  .month-status,
+  .card-footer {
+    justify-items: start;
+    justify-content: start;
+  }
+
+  .month-meter {
+    width: 100%;
   }
 }

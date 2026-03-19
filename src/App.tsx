@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 import './App.css'
 import {
   buildFlightCandidates,
-  buildGoogleSearchUrl,
   buildSearchPrompt,
   directionLabels,
   formatDateLong,
@@ -18,14 +17,14 @@ import {
   type Weekday,
 } from './lib/flight-data'
 
-const allSorts: SortMode[] = ['best-value', 'cheapest', 'fastest']
+const allSorts: SortMode[] = ['cheapest', 'date']
 const defaultOutboundDays: Weekday[] = ['thu', 'fri']
 const defaultReturnDays: Weekday[] = ['sun']
 const monthLimit = 8
 
 function App() {
   const [direction, setDirection] = useState<Direction>('gva-to-london')
-  const [sortMode, setSortMode] = useState<SortMode>('best-value')
+  const [sortMode, setSortMode] = useState<SortMode>('cheapest')
   const [selectedAirports, setSelectedAirports] = useState<string[]>([
     ...londonAirports,
   ])
@@ -106,10 +105,9 @@ function App() {
     <main className="page-shell">
       <section className="page-header">
         <p className="kicker">GVA ⇄ London direct tracker</p>
-        <h1>Direct weekend flights, month by month</h1>
+        <h1>Direct weekend flights for the next 12 months</h1>
         <p className="lead">
-          Black-and-white, date-first layout. Open the airline links to verify the
-          live schedule and exact operating flight.
+          Compare the direct options quickly, then keep the ones worth checking.
         </p>
       </section>
 
@@ -284,12 +282,12 @@ function App() {
             <p className="kicker">Results</p>
             <h2>{visibleCount} trips on screen</h2>
             <p className="results-note">
-              Showing up to {monthLimit} ranked trips per month across {monthSections.length}{' '}
-              months. {dateWindowLabel}
+              Sorted across the full list by {sortMode === 'cheapest' ? 'price' : 'date'}.
+              Showing up to {monthLimit} trips per month. {dateWindowLabel}
             </p>
             <p className="prototype-note">
-              Airline links are real route pages where available. Exact times and prices
-              still need live verification.
+              This page rebuilds every 6 hours. Times and prices are still indicative
+              until a live fare source is connected.
             </p>
           </div>
 
@@ -301,9 +299,7 @@ function App() {
             >
               {allSorts.map((option) => (
                 <option key={option} value={option}>
-                  {option === 'best-value'
-                    ? 'Best value'
-                    : option.charAt(0).toUpperCase() + option.slice(1)}
+                  {option === 'cheapest' ? 'Cheapest' : 'Date'}
                 </option>
               ))}
             </select>
@@ -317,11 +313,34 @@ function App() {
           </div>
         ) : (
           <div className="month-sections">
-            {monthSections.map((section) => (
+            {monthSections.map((section, index) => (
               <section className="month-section" key={section.key}>
                 <header className="month-header">
-                  <h3>{section.label}</h3>
-                  <p>{section.flights.length} trips</p>
+                  <div className="month-title-row">
+                    <span
+                      className="month-orb"
+                      style={{ background: section.accent }}
+                    />
+                    <div>
+                      <h3>{section.label}</h3>
+                      <p>
+                        Month {index + 1} of {monthSections.length}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="month-status">
+                    <div className="month-meter">
+                      <span
+                        className="month-meter-fill"
+                        style={{
+                          background: section.accent,
+                          width: `${section.progress}%`,
+                        }}
+                      />
+                    </div>
+                    <p>{section.flights.length} trips</p>
+                  </div>
                 </header>
 
                 <div className="month-grid">
@@ -349,16 +368,23 @@ type FlightCardProps = {
   onCopy: (flight: FlightCandidate) => void
 }
 
-function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
-  const bookingActions = getBookingActions(flight)
+type MonthSection = {
+  accent: string
+  flights: FlightCandidate[]
+  key: string
+  label: string
+  progress: number
+}
 
+function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
   return (
     <article className="flight-card">
       <div className="flight-card-head">
         <div>
           <p className="route-line">{flight.routeTitle}</p>
-          <h4>{formatCardDay(flight.outboundDate)}</h4>
-          <p className="return-line">Return {formatCardDay(flight.inboundDate)}</p>
+          <h4>
+            {formatCardDay(flight.outboundDate)} / {formatCardDay(flight.inboundDate)}
+          </h4>
         </div>
 
         <div className="price-box">
@@ -372,59 +398,39 @@ function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
         <div className="date-block">
           <span className="date-label">Leave</span>
           <strong>{formatCardDate(flight.outboundDate)}</strong>
-          <span>
+          <span className="route-direction">
             {flight.origin} to {flight.destination}
           </span>
+          <span
+            className="time-badge"
+            style={getTimeToneStyle(flight.outbound.departureMinutes)}
+          >
+            {flight.outbound.departureLabel} to {flight.outbound.arrivalLabel}
+          </span>
+          <span className={`airline-name airline-${flight.outbound.airlineId}`}>
+            {flight.outbound.airlineName}
+          </span>
         </div>
+
         <div className="date-block">
           <span className="date-label">Return</span>
           <strong>{formatCardDate(flight.inboundDate)}</strong>
-          <span>
+          <span className="route-direction">
             {flight.destination} to {flight.origin}
+          </span>
+          <span
+            className="time-badge"
+            style={getTimeToneStyle(flight.inbound.departureMinutes)}
+          >
+            {flight.inbound.departureLabel} to {flight.inbound.arrivalLabel}
+          </span>
+          <span className={`airline-name airline-${flight.inbound.airlineId}`}>
+            {flight.inbound.airlineName}
           </span>
         </div>
       </div>
 
-      <div className="legs-table">
-        <div className="leg-row">
-          <span className="leg-name">Outbound</span>
-          <strong>
-            {flight.outbound.departureLabel} to {flight.outbound.arrivalLabel}
-          </strong>
-          <span>{flight.outbound.airlineName}</span>
-        </div>
-        <div className="leg-row">
-          <span className="leg-name">Return</span>
-          <strong>
-            {flight.inbound.departureLabel} to {flight.inbound.arrivalLabel}
-          </strong>
-          <span>{flight.inbound.airlineName}</span>
-        </div>
-      </div>
-
-      <div className="action-row">
-        <div className="action-links">
-          {bookingActions.map((action, index) => (
-            <a
-              className={index === 0 ? 'action-link is-primary' : 'action-link'}
-              href={action.url}
-              key={`${action.label}-${action.url}`}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {action.label}
-            </a>
-          ))}
-          <a
-            className="action-link"
-            href={buildGoogleSearchUrl(flight)}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Google search
-          </a>
-        </div>
-
+      <div className="card-footer">
         <button className="copy-button" onClick={() => onCopy(flight)} type="button">
           {copiedId === flight.id ? 'Copied' : 'Copy search'}
         </button>
@@ -433,11 +439,8 @@ function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
   )
 }
 
-function groupFlightsByMonth(candidates: FlightCandidate[], limit: number) {
-  const sections = new Map<
-    string,
-    { flights: FlightCandidate[]; label: string; monthStart: number }
-  >()
+function groupFlightsByMonth(candidates: FlightCandidate[], limit: number): MonthSection[] {
+  const sections = new Map<string, { flights: FlightCandidate[]; label: string }>()
 
   for (const candidate of candidates) {
     const monthStart = Date.UTC(
@@ -450,8 +453,7 @@ function groupFlightsByMonth(candidates: FlightCandidate[], limit: number) {
     if (!sections.has(key)) {
       sections.set(key, {
         flights: [],
-        label: formatMonthLabel(candidate.outboundDate).toUpperCase(),
-        monthStart,
+        label: formatMonthLabel(candidate.outboundDate),
       })
     }
 
@@ -464,47 +466,15 @@ function groupFlightsByMonth(candidates: FlightCandidate[], limit: number) {
     section.flights.push(candidate)
   }
 
-  return [...sections.entries()]
-    .sort((left, right) => Number(left[0]) - Number(right[0]))
-    .map(([key, section]) => ({
-      key,
-      label: section.label,
-      flights: [...section.flights].sort((left, right) => {
-        if (left.outboundDate.getTime() !== right.outboundDate.getTime()) {
-          return left.outboundDate.getTime() - right.outboundDate.getTime()
-        }
+  const grouped = [...sections.entries()]
 
-        return left.price - right.price
-      }),
-      monthStart: section.monthStart,
-    }))
-}
-
-function getBookingActions(flight: FlightCandidate) {
-  const actions: { label: string; url: string }[] = []
-
-  if (flight.outbound.officialUrl) {
-    actions.push({
-      label:
-        flight.outbound.airlineName === flight.inbound.airlineName &&
-        flight.outbound.officialUrl === flight.inbound.officialUrl
-          ? `Open ${flight.outbound.airlineName}`
-          : `Open ${flight.outbound.airlineName} outbound`,
-      url: flight.outbound.officialUrl,
-    })
-  }
-
-  if (
-    flight.inbound.officialUrl &&
-    flight.inbound.officialUrl !== flight.outbound.officialUrl
-  ) {
-    actions.push({
-      label: `Open ${flight.inbound.airlineName} return`,
-      url: flight.inbound.officialUrl,
-    })
-  }
-
-  return actions
+  return grouped.map(([key, section], index) => ({
+    accent: getMonthAccent(index, grouped.length),
+    flights: section.flights,
+    key,
+    label: section.label,
+    progress: Math.round(((index + 1) / Math.max(grouped.length, 1)) * 100),
+  }))
 }
 
 function formatDaySet(days: Weekday[]) {
@@ -517,6 +487,27 @@ function formatCardDay(date: Date) {
 
 function formatCardDate(date: Date) {
   return cardDateFormatter.format(date)
+}
+
+function getMonthAccent(index: number, total: number) {
+  const progress = total <= 1 ? 0 : index / (total - 1)
+  const hue = 220 - progress * 185
+  return `hsl(${Math.round(hue)} 72% 52%)`
+}
+
+function getTimeToneStyle(totalMinutes: number): CSSProperties {
+  const hour = totalMinutes / 60
+  const progress = clamp((hour - 5) / 18, 0, 1)
+  const hue = 35 + progress * 185
+
+  return {
+    background: `linear-gradient(135deg, hsla(${hue}, 92%, 95%, 1), hsla(${hue}, 72%, 86%, 1))`,
+    borderColor: `hsla(${hue}, 70%, 48%, 0.35)`,
+  }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
 }
 
 const cardDayFormatter = new Intl.DateTimeFormat('en-GB', {

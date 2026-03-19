@@ -1,5 +1,5 @@
 export type Direction = 'gva-to-london' | 'london-to-gva'
-export type SortMode = 'best-value' | 'cheapest' | 'fastest'
+export type SortMode = 'cheapest' | 'date'
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type AirlineId = 'easyjet' | 'ba' | 'swiss'
 
@@ -140,6 +140,15 @@ const airportProfiles: AirportProfile[] = [
     shortHaulMinutes: 99,
   },
   {
+    code: 'STN',
+    city: 'London',
+    comfortBias: 0.52,
+    directCarriers: ['easyjet'],
+    name: 'Stansted',
+    priceBase: 84,
+    shortHaulMinutes: 109,
+  },
+  {
     code: 'SEN',
     city: 'London',
     comfortBias: 0.46,
@@ -272,6 +281,18 @@ export function buildFlightCandidates(config: BuildConfig): FlightCandidate[] {
   }
 
   return candidates.sort((left, right) => {
+    if (config.sortMode === 'date') {
+      if (left.outboundDate.getTime() !== right.outboundDate.getTime()) {
+        return left.outboundDate.getTime() - right.outboundDate.getTime()
+      }
+
+      if (left.inboundDate.getTime() !== right.inboundDate.getTime()) {
+        return left.inboundDate.getTime() - right.inboundDate.getTime()
+      }
+
+      return left.price - right.price
+    }
+
     if (left.rankScore !== right.rankScore) {
       return left.rankScore - right.rankScore
     }
@@ -497,21 +518,17 @@ function buildRankScore(input: {
   const durationPenalty = Math.round(Math.max(input.totalFlightMinutes - 200, 0) * 0.18)
   const stayPenalty = input.stayLengthDays === 1 ? 8 : 0
 
-  if (input.sortMode === 'cheapest') {
-    return input.price + Math.round(durationPenalty * 0.25)
-  }
-
-  if (input.sortMode === 'fastest') {
-    return input.totalFlightMinutes + Math.round(input.price * 0.18)
+  if (input.sortMode === 'date') {
+    return 0
   }
 
   return (
     input.price +
-    durationPenalty +
-    comfortPenalty +
-    morningPenalty +
-    lateArrivalPenalty +
-    stayPenalty
+    Math.round(durationPenalty * 0.18) +
+    Math.round(comfortPenalty * 0.12) +
+    Math.round(morningPenalty * 0.1) +
+    Math.round(lateArrivalPenalty * 0.1) +
+    Math.round(stayPenalty * 0.1)
   )
 }
 
@@ -547,6 +564,7 @@ function buildEasyJetUrl(origin: string, airportCode: string, direction: Directi
     GVA: 'geneva',
     LGW: 'london-gatwick',
     LTN: 'london-luton',
+    STN: 'london-stansted',
     SEN: 'london-southend',
   }
 
@@ -663,7 +681,7 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
 })
 
 const monthFormatter = new Intl.DateTimeFormat('en-GB', {
-  month: 'short',
+  month: 'long',
   timeZone: 'UTC',
   year: 'numeric',
 })
