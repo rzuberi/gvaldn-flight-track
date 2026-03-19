@@ -12,18 +12,15 @@ Weekend flight tracker for Geneva and London airport pairs.
 - Lets the user flip direction to `London airport -> GVA`.
 - Only shows direct flights.
 - Allows mixed airlines across the round trip, for example easyJet outbound and SWISS inbound.
-- Makes each result easy to identify with a route code, exact dates, per-leg carrier, per-leg flight code, and a copyable search prompt.
-- Adds direct lookup links for each result:
-  - official airline pages where supported
-  - Skyscanner
-  - KAYAK
-  - Google search
+- Groups results by month with a date-first card layout.
+- Keeps all filters visible on the page instead of hiding them in dropdown panels.
+- Adds airline-first lookup links for each result where supported, plus a copyable search prompt and Google fallback.
 
 ## Current data mode
 
 This release uses a deterministic mock pricing model so the UI, ranking logic, and lookup flow can be validated immediately.
 
-It is not yet connected to a live fare API.
+It is not yet connected to a live fare API, so prices and displayed times are still indicative and must be checked on the airline site.
 
 ## Why it is built this way
 

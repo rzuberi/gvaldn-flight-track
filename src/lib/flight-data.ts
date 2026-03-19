@@ -1,7 +1,7 @@
 export type Direction = 'gva-to-london' | 'london-to-gva'
 export type SortMode = 'best-value' | 'cheapest' | 'fastest'
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
-export type AirlineId = 'easyjet' | 'ba' | 'swiss' | 'jet2'
+export type AirlineId = 'easyjet' | 'ba' | 'swiss'
 
 export type FlightLeg = {
   airlineId: AirlineId
@@ -11,7 +11,6 @@ export type FlightLeg = {
   departureLabel: string
   departureMinutes: number
   durationMinutes: number
-  flightCode: string
   officialLabel: string
   officialUrl: string | null
 }
@@ -20,7 +19,6 @@ export type FlightCandidate = {
   id: string
   direction: Direction
   destination: string
-  highlights: string[]
   inbound: FlightLeg
   inboundDate: Date
   lookupAirportName: string
@@ -33,7 +31,6 @@ export type FlightCandidate = {
   routeCode: string
   routeTitle: string
   stayLengthDays: number
-  stayLengthLabel: string
   totalFlightMinutes: number
   totalFlightLabel: string
 }
@@ -103,11 +100,6 @@ const airlineProfiles: Record<AirlineId, AirlineProfile> = {
     label: 'SWISS',
     priceModifier: 18,
   },
-  jet2: {
-    code: 'LS',
-    label: 'Jet2',
-    priceModifier: -4,
-  },
 }
 
 const airportProfiles: AirportProfile[] = [
@@ -146,15 +138,6 @@ const airportProfiles: AirportProfile[] = [
     name: 'Luton',
     priceBase: 76,
     shortHaulMinutes: 99,
-  },
-  {
-    code: 'STN',
-    city: 'London',
-    comfortBias: 0.5,
-    directCarriers: ['jet2'],
-    name: 'Stansted',
-    priceBase: 84,
-    shortHaulMinutes: 109,
   },
   {
     code: 'SEN',
@@ -262,22 +245,14 @@ export function buildFlightCandidates(config: BuildConfig): FlightCandidate[] {
         config.direction === 'gva-to-london'
           ? `${origin} to ${airport.city} ${airport.name}`
           : `${airport.city} ${airport.name} to ${destination}`
-      const highlights = buildHighlights({
-        airport,
-        inboundCarrier,
-        outboundCarrier,
-        price,
-        stayLengthDays: pair.stayLengthDays,
-      })
       const referenceCode =
         `${routeCode} · ${toIsoDate(pair.outboundDate)} → ${toIsoDate(pair.inboundDate)} · ` +
-        `${outboundLeg.flightCode} / ${inboundLeg.flightCode}`
+        `${outboundLeg.airlineName} / ${inboundLeg.airlineName}`
 
       candidates.push({
         id: `${routeCode}-${toIsoDate(pair.outboundDate)}-${toIsoDate(pair.inboundDate)}-${outboundCarrier}-${inboundCarrier}`,
         direction: config.direction,
         destination,
-        highlights,
         inbound: inboundLeg,
         inboundDate: pair.inboundDate,
         lookupAirportName: airport.name,
@@ -290,7 +265,6 @@ export function buildFlightCandidates(config: BuildConfig): FlightCandidate[] {
         routeCode,
         routeTitle,
         stayLengthDays: pair.stayLengthDays,
-        stayLengthLabel: `${pair.stayLengthDays} day${pair.stayLengthDays === 1 ? '' : 's'}`,
         totalFlightMinutes,
         totalFlightLabel: formatDuration(totalFlightMinutes),
       })
@@ -356,8 +330,9 @@ export function buildSearchPrompt(flight: FlightCandidate) {
     `${flight.origin} ${flight.destination} direct return flight`,
     toIsoDate(flight.outboundDate),
     toIsoDate(flight.inboundDate),
-    `outbound ${flight.outbound.airlineName} ${flight.outbound.flightCode} ${flight.outbound.departureLabel}`,
-    `return ${flight.inbound.airlineName} ${flight.inbound.flightCode} arrives ${flight.inbound.arrivalLabel}`,
+    `outbound ${flight.outbound.airlineName}`,
+    `return ${flight.inbound.airlineName}`,
+    `${flight.lookupAirportName} airport`,
   ].join(' · ')
 }
 
@@ -460,7 +435,6 @@ function buildLeg(input: {
     departureLabel: formatClock(departureMinutes),
     departureMinutes,
     durationMinutes,
-    flightCode: `${airline.code} ${100 + (seed % 900)}`,
     officialLabel: airline.label,
     officialUrl: buildOfficialAirlineUrl({
       airportCode: input.airportCode,
@@ -541,34 +515,6 @@ function buildRankScore(input: {
   )
 }
 
-function buildHighlights(input: {
-  airport: AirportProfile
-  inboundCarrier: AirlineId
-  outboundCarrier: AirlineId
-  price: number
-  stayLengthDays: number
-}) {
-  const highlights: string[] = ['Direct only']
-
-  if (input.price <= 95) {
-    highlights.push('Lower fare')
-  }
-
-  if (input.outboundCarrier !== input.inboundCarrier) {
-    highlights.push('Mixed airlines')
-  }
-
-  if (input.airport.code === 'LHR' || input.airport.code === 'LCY') {
-    highlights.push('Stronger airport')
-  }
-
-  if (input.stayLengthDays >= 3) {
-    highlights.push('Longer trip')
-  }
-
-  return highlights
-}
-
 function pickCarrier(carriers: AirlineId[], seed: number) {
   return carriers[seed % carriers.length]
 }
@@ -591,10 +537,6 @@ function buildOfficialAirlineUrl(input: {
     return input.direction === 'gva-to-london'
       ? 'https://www.swiss.com/lhg/gb/en/o-d/cy-cy/geneva-london'
       : 'https://www.swiss.com/lhg/gb/en/o-d/cy-cy/london-geneva'
-  }
-
-  if (input.carrier === 'jet2') {
-    return 'https://www.jet2.com/en/flights'
   }
 
   return null
