@@ -202,50 +202,16 @@
 
 .month-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #ececec;
 }
 
-.month-title-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.month-orb {
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  flex: 0 0 auto;
-}
-
 .month-header h3 {
   font-size: clamp(1.5rem, 3vw, 2rem);
   text-transform: uppercase;
-}
-
-.month-status {
-  display: grid;
-  gap: 8px;
-  justify-items: end;
-  min-width: 180px;
-}
-
-.month-meter {
-  width: 180px;
-  height: 10px;
-  border-radius: 999px;
-  background: #ececec;
-  overflow: hidden;
-}
-
-.month-meter-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
 }
 
 .month-grid {
@@ -282,13 +248,9 @@
 }
 
 .price-box {
-  display: grid;
-  gap: 6px;
-  align-content: start;
-  padding: 14px;
-  border: 1px solid #dddddd;
-  border-radius: 16px;
-  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .price-box strong {
@@ -388,13 +350,8 @@
     display: grid;
   }
 
-  .month-status,
   .card-footer {
     justify-items: start;
     justify-content: start;
-  }
-
-  .month-meter {
-    width: 100%;
   }
 }

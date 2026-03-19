@@ -313,34 +313,11 @@ function App() {
           </div>
         ) : (
           <div className="month-sections">
-            {monthSections.map((section, index) => (
+            {monthSections.map((section) => (
               <section className="month-section" key={section.key}>
                 <header className="month-header">
-                  <div className="month-title-row">
-                    <span
-                      className="month-orb"
-                      style={{ background: section.accent }}
-                    />
-                    <div>
-                      <h3>{section.label}</h3>
-                      <p>
-                        Month {index + 1} of {monthSections.length}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="month-status">
-                    <div className="month-meter">
-                      <span
-                        className="month-meter-fill"
-                        style={{
-                          background: section.accent,
-                          width: `${section.progress}%`,
-                        }}
-                      />
-                    </div>
-                    <p>{section.flights.length} trips</p>
-                  </div>
+                  <h3>{section.label}</h3>
+                  <p>{section.flights.length} trips</p>
                 </header>
 
                 <div className="month-grid">
@@ -369,11 +346,9 @@ type FlightCardProps = {
 }
 
 type MonthSection = {
-  accent: string
   flights: FlightCandidate[]
   key: string
   label: string
-  progress: number
 }
 
 function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
@@ -388,9 +363,7 @@ function FlightCard({ copiedId, flight, onCopy }: FlightCardProps) {
         </div>
 
         <div className="price-box">
-          <span className="price-label">Indicative fare</span>
           <strong>GBP {flight.price}</strong>
-          <span className="price-meta">{flight.totalFlightLabel}</span>
         </div>
       </div>
 
@@ -466,14 +439,10 @@ function groupFlightsByMonth(candidates: FlightCandidate[], limit: number): Mont
     section.flights.push(candidate)
   }
 
-  const grouped = [...sections.entries()]
-
-  return grouped.map(([key, section], index) => ({
-    accent: getMonthAccent(index, grouped.length),
+  return [...sections.entries()].map(([key, section]) => ({
     flights: section.flights,
     key,
     label: section.label,
-    progress: Math.round(((index + 1) / Math.max(grouped.length, 1)) * 100),
   }))
 }
 
@@ -487,12 +456,6 @@ function formatCardDay(date: Date) {
 
 function formatCardDate(date: Date) {
   return cardDateFormatter.format(date)
-}
-
-function getMonthAccent(index: number, total: number) {
-  const progress = total <= 1 ? 0 : index / (total - 1)
-  const hue = 220 - progress * 185
-  return `hsl(${Math.round(hue)} 72% 52%)`
 }
 
 function getTimeToneStyle(totalMinutes: number): CSSProperties {
