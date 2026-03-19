@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import {
+  buildAirlineSummary,
   buildFlightCandidates,
   buildGoogleSearchUrl,
   buildKayakUrl,
@@ -9,36 +10,50 @@ import {
   directionLabels,
   formatDateLong,
   formatDateRange,
+  formatHourLabel,
   formatMonthLabel,
   formatShortDate,
   getMonthLeaders,
+  hourOptions,
   londonAirports,
+  weekdays,
+  weekdayLabels,
   type Direction,
   type FlightCandidate,
   type SortMode,
-  type WeekendPattern,
+  type Weekday,
 } from './lib/flight-data'
 
-const allPatterns: WeekendPattern[] = ['thu-sun', 'fri-sun']
 const allSorts: SortMode[] = ['best-value', 'cheapest', 'fastest']
+const defaultOutboundDays: Weekday[] = ['thu', 'fri']
+const defaultReturnDays: Weekday[] = ['sun']
 
 function App() {
   const [direction, setDirection] = useState<Direction>('gva-to-london')
   const [sortMode, setSortMode] = useState<SortMode>('best-value')
-  const [selectedPatterns, setSelectedPatterns] =
-    useState<WeekendPattern[]>(allPatterns)
   const [selectedAirports, setSelectedAirports] = useState<string[]>([
     ...londonAirports,
   ])
-  const [directOnly, setDirectOnly] = useState(false)
+  const [outboundDays, setOutboundDays] = useState<Weekday[]>([
+    ...defaultOutboundDays,
+  ])
+  const [returnDays, setReturnDays] = useState<Weekday[]>([...defaultReturnDays])
+  const [outboundStartHour, setOutboundStartHour] = useState(6)
+  const [outboundEndHour, setOutboundEndHour] = useState(13)
+  const [returnStartHour, setReturnStartHour] = useState(15)
+  const [returnEndHour, setReturnEndHour] = useState(23)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const candidates = buildFlightCandidates({
-    direction,
-    sortMode,
-    patterns: selectedPatterns,
     airports: selectedAirports,
-    directOnly,
+    direction,
+    inboundArrivalEndHour: returnEndHour,
+    inboundArrivalStartHour: returnStartHour,
+    outboundDays,
+    outboundDepartureEndHour: outboundEndHour,
+    outboundDepartureStartHour: outboundStartHour,
+    returnDays,
+    sortMode,
   })
   const monthLeaders = getMonthLeaders(candidates)
   const topResults = candidates.slice(0, 24)
@@ -46,16 +61,20 @@ function App() {
   const medianPrice =
     candidates[Math.floor(candidates.length / 2)]?.price ?? cheapest?.price ?? 0
 
-  const togglePattern = (pattern: WeekendPattern) => {
-    setSelectedPatterns((current) => {
-      if (current.includes(pattern)) {
-        if (current.length === 1) {
-          return current
+  const toggleWeekday = (
+    day: Weekday,
+    setValue: (updater: (value: Weekday[]) => Weekday[]) => void,
+  ) => {
+    setValue((existing) => {
+      if (existing.includes(day)) {
+        if (existing.length === 1) {
+          return existing
         }
-        return current.filter((entry) => entry !== pattern)
+
+        return existing.filter((entry) => entry !== day)
       }
 
-      return [...current, pattern]
+      return [...existing, day]
     })
   }
 
@@ -65,6 +84,7 @@ function App() {
         if (current.length === 1) {
           return current
         }
+
         return current.filter((entry) => entry !== airportCode)
       }
 
@@ -73,10 +93,8 @@ function App() {
   }
 
   const copySearch = async (flight: FlightCandidate) => {
-    const text = buildSearchPrompt(flight)
-
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(buildSearchPrompt(flight))
       setCopiedId(flight.id)
       window.setTimeout(() => setCopiedId(null), 1800)
     } catch {
@@ -84,17 +102,23 @@ function App() {
     }
   }
 
+  const dateWindowLabel =
+    candidates.length > 0
+      ? `${formatDateLong(candidates[0].outboundDate)} to ${formatDateLong(candidates[candidates.length - 1].inboundDate)}`
+      : 'No matching trips'
+
   return (
     <main className="page-shell">
       <section className="hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">GVA / London weekend tracker</p>
-          <h1>Rank the next 12 months of weekend flights, then jump straight to lookup links.</h1>
+          <p className="eyebrow">GVA / London direct tracker</p>
+          <h1>Pick the days and hours you like, then jump to direct airline links.</h1>
           <p className="hero-text">
-            This first release scans every upcoming <strong>Thursday to Sunday</strong>{' '}
-            and <strong>Friday to Sunday</strong> weekend in the next 12 months,
-            ranks the best route/date combinations, and makes each candidate easy
-            to verify on Skyscanner, KAYAK, or a quick Google flight search.
+            This version only models <strong>direct flights</strong>. You can now
+            choose acceptable outbound days, acceptable return days, an outbound
+            departure window, and a return arrival window. Routes can mix
+            airlines, so you might leave on <strong>easyJet</strong> and come back
+            on <strong>SWISS</strong>.
           </p>
         </div>
 
@@ -102,23 +126,20 @@ function App() {
           <div className="stat-card accent-card">
             <span className="stat-label">Direction</span>
             <strong>{directionLabels[direction]}</strong>
-            <span className="stat-footnote">Switchable in the controls below</span>
+            <span className="stat-footnote">Switchable below</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Date window</span>
-            <strong>
-              {formatDateLong(candidates[0]?.outboundDate ?? new Date())} to{' '}
-              {formatDateLong(
-                candidates[candidates.length - 1]?.inboundDate ?? new Date(),
-              )}
-            </strong>
-            <span className="stat-footnote">Rolling 12-month view from today</span>
+            <strong>{dateWindowLabel}</strong>
+            <span className="stat-footnote">Rolling 12 months from today</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Current cheapest</span>
             <strong>{cheapest ? `GBP ${cheapest.price}` : 'No matches'}</strong>
             <span className="stat-footnote">
-              {cheapest ? `${cheapest.routeCode} · ${formatDateRange(cheapest)}` : 'Adjust filters'}
+              {cheapest
+                ? `${cheapest.routeCode} · ${formatDateRange(cheapest)}`
+                : 'Adjust filters'}
             </span>
           </div>
         </div>
@@ -126,9 +147,9 @@ function App() {
 
       <section className="status-banner">
         <p>
-          <strong>Current mode:</strong> ranked demo data with real lookup links.
-          The pricing model is deterministic for planning and UI validation; the
-          next backend step is wiring a live fare provider.
+          <strong>Current mode:</strong> direct-flight demo rankings with airline-first
+          links where possible. Exact live airline booking deeplinks still need a
+          server-side fare/search integration.
         </p>
       </section>
 
@@ -153,19 +174,123 @@ function App() {
           </div>
         </div>
 
-        <div className="control-group">
-          <span className="control-label">Weekend pattern</span>
-          <div className="chip-set">
-            {allPatterns.map((pattern) => (
-              <button
-                key={pattern}
-                className={selectedPatterns.includes(pattern) ? 'chip is-active' : 'chip'}
-                onClick={() => togglePattern(pattern)}
-                type="button"
-              >
-                {pattern === 'thu-sun' ? 'Thu to Sun' : 'Fri to Sun'}
-              </button>
-            ))}
+        <div className="control-grid">
+          <div className="control-group">
+            <span className="control-label">Leave on</span>
+            <div className="chip-set">
+              {weekdays.map((day) => (
+                <button
+                  className={outboundDays.includes(day) ? 'chip is-active' : 'chip'}
+                  key={day}
+                  onClick={() => toggleWeekday(day, setOutboundDays)}
+                  type="button"
+                >
+                  {weekdayLabels[day]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="control-group">
+            <span className="control-label">Return on</span>
+            <div className="chip-set">
+              {weekdays.map((day) => (
+                <button
+                  className={returnDays.includes(day) ? 'chip is-active' : 'chip'}
+                  key={day}
+                  onClick={() => toggleWeekday(day, setReturnDays)}
+                  type="button"
+                >
+                  {weekdayLabels[day]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="control-grid">
+          <div className="control-group">
+            <span className="control-label">Leave between</span>
+            <div className="time-grid">
+              <label className="time-field">
+                <span>From</span>
+                <select
+                  onChange={(event) => {
+                    const next = Number(event.target.value)
+                    setOutboundStartHour(next)
+                    if (next >= outboundEndHour) {
+                      setOutboundEndHour(next + 1)
+                    }
+                  }}
+                  value={outboundStartHour}
+                >
+                  {hourOptions
+                    .filter((hour) => hour < outboundEndHour)
+                    .map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatHourLabel(hour)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="time-field">
+                <span>To</span>
+                <select
+                  onChange={(event) => setOutboundEndHour(Number(event.target.value))}
+                  value={outboundEndHour}
+                >
+                  {hourOptions
+                    .filter((hour) => hour > outboundStartHour)
+                    .map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatHourLabel(hour)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <span className="control-label">Return arrival between</span>
+            <div className="time-grid">
+              <label className="time-field">
+                <span>From</span>
+                <select
+                  onChange={(event) => {
+                    const next = Number(event.target.value)
+                    setReturnStartHour(next)
+                    if (next >= returnEndHour) {
+                      setReturnEndHour(next + 1)
+                    }
+                  }}
+                  value={returnStartHour}
+                >
+                  {hourOptions
+                    .filter((hour) => hour < returnEndHour)
+                    .map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatHourLabel(hour)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="time-field">
+                <span>To</span>
+                <select
+                  onChange={(event) => setReturnEndHour(Number(event.target.value))}
+                  value={returnEndHour}
+                >
+                  {hourOptions
+                    .filter((hour) => hour > returnStartHour)
+                    .map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatHourLabel(hour)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -174,10 +299,10 @@ function App() {
           <div className="chip-set">
             {londonAirports.map((airportCode) => (
               <button
-                key={airportCode}
                 className={
                   selectedAirports.includes(airportCode) ? 'chip is-active' : 'chip'
                 }
+                key={airportCode}
                 onClick={() => toggleAirport(airportCode)}
                 type="button"
               >
@@ -188,15 +313,7 @@ function App() {
         </div>
 
         <div className="control-group inline-group">
-          <label className="checkbox-row">
-            <input
-              checked={directOnly}
-              onChange={(event) => setDirectOnly(event.target.checked)}
-              type="checkbox"
-            />
-            <span>Direct flights only</span>
-          </label>
-
+          <div className="static-note">Direct flights only</div>
           <label className="sort-row">
             <span className="control-label">Sort</span>
             <select
@@ -217,25 +334,30 @@ function App() {
 
       <section className="summary-grid">
         <article className="summary-card">
-          <span className="summary-label">Weekend combinations</span>
+          <span className="summary-label">Direct combinations</span>
           <strong>{candidates.length}</strong>
           <p>
-            {selectedPatterns.length} pattern{selectedPatterns.length === 1 ? '' : 's'} across{' '}
-            {selectedAirports.length} London airport
-            {selectedAirports.length === 1 ? '' : 's'}
+            {outboundDays.length} outbound day
+            {outboundDays.length === 1 ? '' : 's'} and {returnDays.length} return day
+            {returnDays.length === 1 ? '' : 's'}
           </p>
         </article>
 
         <article className="summary-card">
           <span className="summary-label">Median ranked fare</span>
           <strong>GBP {medianPrice}</strong>
-          <p>Useful anchor for spotting unusually cheap weekends.</p>
+          <p>Across the current day and time filters.</p>
         </article>
 
         <article className="summary-card">
-          <span className="summary-label">Reference format</span>
-          <strong>Route + dates + carrier</strong>
-          <p>Every card is designed to be searchable on external sites in one click.</p>
+          <span className="summary-label">Time windows</span>
+          <strong>
+            {formatHourLabel(outboundStartHour)} to {formatHourLabel(outboundEndHour)}
+          </strong>
+          <p>
+            Outbound departure, then return arrival {formatHourLabel(returnStartHour)} to{' '}
+            {formatHourLabel(returnEndHour)}.
+          </p>
         </article>
       </section>
 
@@ -243,10 +365,10 @@ function App() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">Month leaders</p>
-            <h2>Best ranked weekend in each upcoming month</h2>
+            <h2>Best direct option in each upcoming month</h2>
           </div>
           <p className="section-note">
-            One fast view so you can decide which months deserve deeper checking.
+            A fast scan of which months are worth checking first.
           </p>
         </div>
 
@@ -256,10 +378,10 @@ function App() {
               <span className="month-label">{formatMonthLabel(flight.outboundDate)}</span>
               <strong>{flight.routeCode}</strong>
               <p>{formatDateRange(flight)}</p>
-              <p>{flight.airline}</p>
+              <p>{buildAirlineSummary(flight)}</p>
               <div className="month-meta">
                 <span>GBP {flight.price}</span>
-                <span>{flight.stopsLabel}</span>
+                <span>{flight.stayLengthLabel}</span>
               </div>
             </article>
           ))}
@@ -270,30 +392,31 @@ function App() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">Ranked results</p>
-            <h2>Top weekend picks to verify now</h2>
+            <h2>Top direct picks to verify now</h2>
           </div>
           <p className="section-note">
-            Sorted by{' '}
-            {sortMode === 'best-value'
-              ? 'best value'
-              : sortMode === 'cheapest'
-                ? 'lowest price'
-                : 'shortest trip time'}
-            .
+            Airline-first links appear before Skyscanner and KAYAK.
           </p>
         </div>
 
-        <div className="results-list">
-          {topResults.map((flight, index) => (
-            <FlightCard
-              copiedId={copiedId}
-              flight={flight}
-              index={index}
-              key={flight.id}
-              onCopy={copySearch}
-            />
-          ))}
-        </div>
+        {topResults.length === 0 ? (
+          <div className="empty-state">
+            No direct options match the current weekday and hour filters. Widen the
+            departure or return window and try again.
+          </div>
+        ) : (
+          <div className="results-list">
+            {topResults.map((flight, index) => (
+              <FlightCard
+                copiedId={copiedId}
+                flight={flight}
+                index={index}
+                key={flight.id}
+                onCopy={copySearch}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   )
@@ -316,8 +439,8 @@ function FlightCard({ copiedId, flight, index, onCopy }: FlightCardProps) {
           <p className="result-reference">{flight.referenceCode}</p>
           <h3>{flight.routeTitle}</h3>
           <p className="result-subtitle">
-            {formatDateRange(flight)} · {flight.patternLabel} · {flight.airline} ·{' '}
-            {flight.stopsLabel}
+            {formatDateRange(flight)} · {flight.stayLengthLabel} ·{' '}
+            {buildAirlineSummary(flight)}
           </p>
         </div>
 
@@ -338,15 +461,29 @@ function FlightCard({ copiedId, flight, index, onCopy }: FlightCardProps) {
 
       <dl className="facts-grid">
         <div>
-          <dt>Outbound</dt>
+          <dt>Outbound leg</dt>
           <dd>
-            {formatShortDate(flight.outboundDate)} · {flight.outboundTime}
+            {formatShortDate(flight.outboundDate)} · {flight.outbound.flightCode} ·{' '}
+            {flight.outbound.airlineName}
           </dd>
         </div>
         <div>
-          <dt>Return</dt>
+          <dt>Leave time</dt>
           <dd>
-            {formatShortDate(flight.inboundDate)} · {flight.inboundTime}
+            {flight.outbound.departureLabel} to {flight.outbound.arrivalLabel}
+          </dd>
+        </div>
+        <div>
+          <dt>Return leg</dt>
+          <dd>
+            {formatShortDate(flight.inboundDate)} · {flight.inbound.flightCode} ·{' '}
+            {flight.inbound.airlineName}
+          </dd>
+        </div>
+        <div>
+          <dt>Return timing</dt>
+          <dd>
+            {flight.inbound.departureLabel} to {flight.inbound.arrivalLabel}
           </dd>
         </div>
         <div>
@@ -356,8 +493,8 @@ function FlightCard({ copiedId, flight, index, onCopy }: FlightCardProps) {
           </dd>
         </div>
         <div>
-          <dt>Trip time</dt>
-          <dd>{flight.durationLabel}</dd>
+          <dt>Total flight time</dt>
+          <dd>{flight.totalFlightLabel}</dd>
         </div>
         <div>
           <dt>Lookup route</dt>
@@ -369,19 +506,40 @@ function FlightCard({ copiedId, flight, index, onCopy }: FlightCardProps) {
         </div>
       </dl>
 
-      <div className="lookup-bar">
-        <a href={buildSkyscannerUrl(flight)} rel="noreferrer" target="_blank">
-          Open in Skyscanner
-        </a>
-        <a href={buildKayakUrl(flight)} rel="noreferrer" target="_blank">
-          Open in KAYAK
-        </a>
-        <a href={buildGoogleSearchUrl(flight)} rel="noreferrer" target="_blank">
-          Google search
-        </a>
-        <button onClick={() => onCopy(flight)} type="button">
-          {copiedId === flight.id ? 'Copied' : 'Copy search text'}
-        </button>
+      <div className="lookup-group">
+        <div className="lookup-section">
+          <span className="control-label">Official airline links</span>
+          <div className="lookup-bar">
+            {flight.outbound.officialUrl && (
+              <a href={flight.outbound.officialUrl} rel="noreferrer" target="_blank">
+                Outbound: {flight.outbound.officialLabel}
+              </a>
+            )}
+            {flight.inbound.officialUrl && (
+              <a href={flight.inbound.officialUrl} rel="noreferrer" target="_blank">
+                Return: {flight.inbound.officialLabel}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="lookup-section">
+          <span className="control-label">Cross-check links</span>
+          <div className="lookup-bar">
+            <a href={buildSkyscannerUrl(flight)} rel="noreferrer" target="_blank">
+              Skyscanner
+            </a>
+            <a href={buildKayakUrl(flight)} rel="noreferrer" target="_blank">
+              KAYAK
+            </a>
+            <a href={buildGoogleSearchUrl(flight)} rel="noreferrer" target="_blank">
+              Google search
+            </a>
+            <button onClick={() => onCopy(flight)} type="button">
+              {copiedId === flight.id ? 'Copied' : 'Copy search text'}
+            </button>
+          </div>
+        </div>
       </div>
     </article>
   )

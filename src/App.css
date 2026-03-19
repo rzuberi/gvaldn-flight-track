@@ -26,7 +26,8 @@
 .summary-card,
 .month-card,
 .result-card,
-.status-banner {
+.status-banner,
+.empty-state {
   background: rgba(255, 248, 235, 0.92);
   border: 1px solid rgba(32, 23, 8, 0.08);
   box-shadow: 0 18px 60px rgba(50, 32, 8, 0.08);
@@ -65,7 +66,8 @@
 .summary-card p,
 .month-card p,
 .stat-footnote,
-.status-banner p {
+.status-banner p,
+.empty-state {
   color: #5b5147;
 }
 
@@ -121,7 +123,8 @@
 
 .controls-panel,
 .months-panel,
-.results-panel {
+.results-panel,
+.empty-state {
   border-radius: 28px;
   padding: 24px;
 }
@@ -139,9 +142,16 @@
   margin-top: 20px;
 }
 
+.control-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .segmented,
 .chip-set,
-.inline-group {
+.inline-group,
+.lookup-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -150,7 +160,8 @@
 .segmented button,
 .chip,
 .lookup-bar a,
-.lookup-bar button {
+.lookup-bar button,
+.time-field select {
   border: 1px solid rgba(39, 29, 14, 0.12);
   border-radius: 999px;
   background: #fffdf8;
@@ -178,16 +189,44 @@
   padding: 10px 14px;
 }
 
-.checkbox-row,
+.time-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.time-field {
+  display: grid;
+  gap: 8px;
+  color: #5b5147;
+}
+
+.time-field span {
+  font-size: 0.92rem;
+}
+
+.time-field select,
+.sort-row select {
+  padding: 11px 16px;
+}
+
+.inline-group {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.static-note {
+  border-radius: 999px;
+  background: rgba(157, 78, 19, 0.12);
+  color: #8f4616;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
 .sort-row {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-}
-
-.checkbox-row input {
-  width: 18px;
-  height: 18px;
 }
 
 .sort-row select {
@@ -195,8 +234,6 @@
   border-radius: 999px;
   background: #fffdf8;
   color: #201708;
-  font: inherit;
-  padding: 11px 16px;
 }
 
 .summary-grid,
@@ -321,7 +358,7 @@
 
 .facts-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin: 22px 0;
 }
@@ -337,9 +374,13 @@
   line-height: 1.5;
 }
 
-.lookup-bar {
-  display: flex;
-  flex-wrap: wrap;
+.lookup-group {
+  display: grid;
+  gap: 14px;
+}
+
+.lookup-section {
+  display: grid;
   gap: 10px;
 }
 
@@ -352,7 +393,8 @@
 .lookup-bar a:hover,
 .lookup-bar button:hover,
 .segmented button:hover,
-.chip:hover {
+.chip:hover,
+.time-field select:hover {
   border-color: rgba(157, 78, 19, 0.48);
   transform: translateY(-1px);
 }
@@ -366,7 +408,8 @@
   .summary-grid,
   .month-grid,
   .result-header,
-  .facts-grid {
+  .facts-grid,
+  .control-grid {
     grid-template-columns: 1fr;
   }
 
@@ -386,11 +429,21 @@
   .controls-panel,
   .months-panel,
   .results-panel,
-  .result-card {
+  .result-card,
+  .empty-state {
     padding: 18px;
   }
 
   .hero-copy h1 {
     max-width: none;
+  }
+
+  .time-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-group {
+    align-items: start;
+    flex-direction: column;
   }
 }

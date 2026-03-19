@@ -5,18 +5,23 @@ Weekend flight tracker for Geneva and London airport pairs.
 ## What this version does
 
 - Looks from the current date through the next 12 months.
-- Generates every upcoming `Thu -> Sun` and `Fri -> Sun` weekend.
+- Generates direct short-trip combinations across the next 12 months.
+- Lets the user choose acceptable outbound weekdays and acceptable return weekdays.
+- Lets the user choose an outbound departure-hour window and a return arrival-hour window.
 - Ranks route/date combinations for `GVA -> London airport` by default.
 - Lets the user flip direction to `London airport -> GVA`.
-- Makes each result easy to identify with a route code, exact dates, carrier, stops, and a copyable search prompt.
+- Only shows direct flights.
+- Allows mixed airlines across the round trip, for example easyJet outbound and SWISS inbound.
+- Makes each result easy to identify with a route code, exact dates, per-leg carrier, per-leg flight code, and a copyable search prompt.
 - Adds direct lookup links for each result:
+  - official airline pages where supported
   - Skyscanner
   - KAYAK
   - Google search
 
 ## Current data mode
 
-This release uses a deterministic mock pricing model so the UI, ranking logic, and external lookup flow can be validated immediately.
+This release uses a deterministic mock pricing model so the UI, ranking logic, and lookup flow can be validated immediately.
 
 It is not yet connected to a live fare API.
 

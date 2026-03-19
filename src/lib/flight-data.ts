@@ -1,111 +1,169 @@
 export type Direction = 'gva-to-london' | 'london-to-gva'
-export type WeekendPattern = 'thu-sun' | 'fri-sun'
 export type SortMode = 'best-value' | 'cheapest' | 'fastest'
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+export type AirlineId = 'easyjet' | 'ba' | 'swiss' | 'jet2'
+
+export type FlightLeg = {
+  airlineId: AirlineId
+  airlineName: string
+  arrivalLabel: string
+  arrivalMinutes: number
+  departureLabel: string
+  departureMinutes: number
+  durationMinutes: number
+  flightCode: string
+  officialLabel: string
+  officialUrl: string | null
+}
 
 export type FlightCandidate = {
   id: string
   direction: Direction
-  origin: string
   destination: string
-  outboundDate: Date
+  highlights: string[]
+  inbound: FlightLeg
   inboundDate: Date
-  outboundTime: string
-  inboundTime: string
-  pattern: WeekendPattern
-  patternLabel: string
-  airline: string
-  stops: number
-  stopsLabel: string
-  durationMinutes: number
-  durationLabel: string
+  lookupAirportName: string
+  origin: string
+  outbound: FlightLeg
+  outboundDate: Date
   price: number
   rankScore: number
+  referenceCode: string
   routeCode: string
   routeTitle: string
-  lookupAirportName: string
-  referenceCode: string
-  highlights: string[]
+  stayLengthDays: number
+  stayLengthLabel: string
+  totalFlightMinutes: number
+  totalFlightLabel: string
 }
 
 type AirportProfile = {
   code: string
   city: string
-  name: string
-  airlines: string[]
-  priceBase: number
-  directBias: number
   comfortBias: number
+  directCarriers: AirlineId[]
+  name: string
+  priceBase: number
+  shortHaulMinutes: number
+}
+
+type AirlineProfile = {
+  code: string
+  label: string
+  priceModifier: number
 }
 
 type BuildConfig = {
-  direction: Direction
-  sortMode: SortMode
-  patterns: WeekendPattern[]
   airports: string[]
-  directOnly: boolean
+  direction: Direction
+  inboundArrivalEndHour: number
+  inboundArrivalStartHour: number
+  outboundDays: Weekday[]
+  outboundDepartureEndHour: number
+  outboundDepartureStartHour: number
+  returnDays: Weekday[]
+  sortMode: SortMode
 }
 
 const dayMs = 24 * 60 * 60 * 1000
 
 export const directionLabels: Record<Direction, string> = {
-  'gva-to-london': 'GVA to any London airport',
-  'london-to-gva': 'London airport to GVA',
+  'gva-to-london': 'GVA to London',
+  'london-to-gva': 'London to GVA',
+}
+
+export const weekdays: Weekday[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+export const weekdayLabels: Record<Weekday, string> = {
+  mon: 'Mon',
+  tue: 'Tue',
+  wed: 'Wed',
+  thu: 'Thu',
+  fri: 'Fri',
+  sat: 'Sat',
+  sun: 'Sun',
+}
+
+export const hourOptions = Array.from({ length: 18 }, (_, index) => index + 5)
+
+const airlineProfiles: Record<AirlineId, AirlineProfile> = {
+  easyjet: {
+    code: 'EZY',
+    label: 'easyJet',
+    priceModifier: -10,
+  },
+  ba: {
+    code: 'BA',
+    label: 'British Airways',
+    priceModifier: 10,
+  },
+  swiss: {
+    code: 'LX',
+    label: 'SWISS',
+    priceModifier: 18,
+  },
+  jet2: {
+    code: 'LS',
+    label: 'Jet2',
+    priceModifier: -4,
+  },
 }
 
 const airportProfiles: AirportProfile[] = [
   {
     code: 'LHR',
     city: 'London',
+    comfortBias: 0.95,
+    directCarriers: ['ba', 'swiss'],
     name: 'Heathrow',
-    airlines: ['British Airways', 'SWISS'],
-    priceBase: 118,
-    directBias: 0.92,
-    comfortBias: 0.92,
+    priceBase: 126,
+    shortHaulMinutes: 102,
   },
   {
     code: 'LGW',
     city: 'London',
+    comfortBias: 0.8,
+    directCarriers: ['easyjet', 'ba'],
     name: 'Gatwick',
-    airlines: ['easyJet', 'British Airways'],
-    priceBase: 86,
-    directBias: 0.89,
-    comfortBias: 0.7,
+    priceBase: 88,
+    shortHaulMinutes: 95,
   },
   {
     code: 'LCY',
     city: 'London',
-    name: 'City',
-    airlines: ['British Airways', 'BA Cityflyer'],
-    priceBase: 144,
-    directBias: 0.81,
     comfortBias: 0.98,
+    directCarriers: ['ba'],
+    name: 'City',
+    priceBase: 142,
+    shortHaulMinutes: 100,
   },
   {
     code: 'LTN',
     city: 'London',
+    comfortBias: 0.55,
+    directCarriers: ['easyjet'],
     name: 'Luton',
-    airlines: ['easyJet', 'Wizz Air'],
-    priceBase: 74,
-    directBias: 0.86,
-    comfortBias: 0.48,
+    priceBase: 76,
+    shortHaulMinutes: 99,
   },
   {
     code: 'STN',
     city: 'London',
+    comfortBias: 0.5,
+    directCarriers: ['jet2'],
     name: 'Stansted',
-    airlines: ['easyJet', 'Ryanair'],
-    priceBase: 79,
-    directBias: 0.63,
-    comfortBias: 0.44,
+    priceBase: 84,
+    shortHaulMinutes: 109,
   },
   {
     code: 'SEN',
     city: 'London',
+    comfortBias: 0.46,
+    directCarriers: ['easyjet'],
     name: 'Southend',
-    airlines: ['easyJet', 'Multiple airlines'],
-    priceBase: 95,
-    directBias: 0.2,
-    comfortBias: 0.4,
+    priceBase: 92,
+    shortHaulMinutes: 101,
   },
 ]
 
@@ -115,103 +173,126 @@ export const airportDetails = Object.fromEntries(
 
 export const londonAirports = airportProfiles.map((profile) => profile.code)
 
-const seasonalityByMonth = [18, 8, 0, -8, -12, 10, 34, 42, 18, 4, 2, 20]
+const seasonalityByMonth = [16, 10, 2, -6, -10, 8, 30, 36, 18, 5, 3, 22]
 
 export function buildFlightCandidates(config: BuildConfig): FlightCandidate[] {
-  const windows = buildWeekendWindows()
+  const datePairs = buildDatePairs(config.outboundDays, config.returnDays)
   const candidates: FlightCandidate[] = []
 
-  for (const window of windows) {
-    if (!config.patterns.includes(window.pattern)) {
-      continue
-    }
-
+  for (const pair of datePairs) {
     for (const airportCode of config.airports) {
-      const profile = airportDetails[airportCode]
+      const airport = airportDetails[airportCode]
 
-      if (!profile) {
+      if (!airport) {
         continue
       }
 
       const origin = config.direction === 'gva-to-london' ? 'GVA' : airportCode
-      const destination =
-        config.direction === 'gva-to-london' ? airportCode : 'GVA'
-      const seed = hashString(
-        [
-          config.direction,
-          airportCode,
-          window.pattern,
-          toIsoDate(window.outboundDate),
-          toIsoDate(window.inboundDate),
-        ].join('|'),
+      const destination = config.direction === 'gva-to-london' ? airportCode : 'GVA'
+      const outboundCarrier = pickCarrier(
+        airport.directCarriers,
+        hashString(
+          `${origin}|${destination}|${toIsoDate(pair.outboundDate)}|${toIsoDate(pair.inboundDate)}|outbound`,
+        ),
+      )
+      const inboundCarrier = pickCarrier(
+        airport.directCarriers,
+        hashString(
+          `${origin}|${destination}|${toIsoDate(pair.outboundDate)}|${toIsoDate(pair.inboundDate)}|inbound`,
+        ),
       )
 
-      const direct = isDirect(seed, profile.directBias)
+      const outboundLeg = buildLeg({
+        airport,
+        airportCode,
+        carrier: outboundCarrier,
+        date: pair.outboundDate,
+        destination,
+        direction: config.direction,
+        legKind: 'outbound',
+        origin,
+      })
+      const inboundLeg = buildLeg({
+        airport,
+        airportCode,
+        carrier: inboundCarrier,
+        date: pair.inboundDate,
+        destination: origin,
+        direction: config.direction === 'gva-to-london' ? 'london-to-gva' : 'gva-to-london',
+        legKind: 'inbound',
+        origin,
+      })
 
-      if (config.directOnly && !direct) {
+      if (
+        !isHourInRange(
+          Math.floor(outboundLeg.departureMinutes / 60),
+          config.outboundDepartureStartHour,
+          config.outboundDepartureEndHour,
+        ) ||
+        !isHourInRange(
+          Math.floor(inboundLeg.arrivalMinutes / 60),
+          config.inboundArrivalStartHour,
+          config.inboundArrivalEndHour,
+        )
+      ) {
         continue
       }
 
-      const airline = pick(profile.airlines, seed)
-      const stops = direct ? 0 : 1
       const price = buildPrice({
-        direct,
-        outboundDate: window.outboundDate,
-        pattern: window.pattern,
-        profile,
-        seed,
+        airport,
+        inboundCarrier,
+        inboundDate: pair.inboundDate,
+        outboundCarrier,
+        outboundDate: pair.outboundDate,
+        stayLengthDays: pair.stayLengthDays,
       })
-      const durationMinutes = buildDurationMinutes({
-        direct,
-        profile,
-        seed,
-      })
+      const totalFlightMinutes =
+        outboundLeg.durationMinutes + inboundLeg.durationMinutes
       const rankScore = buildRankScore({
-        comfortBias: profile.comfortBias,
-        direct,
-        durationMinutes,
-        pattern: window.pattern,
+        airport,
+        inboundArrivalMinutes: inboundLeg.arrivalMinutes,
+        outboundDepartureMinutes: outboundLeg.departureMinutes,
         price,
         sortMode: config.sortMode,
+        stayLengthDays: pair.stayLengthDays,
+        totalFlightMinutes,
       })
-      const outboundTime = buildDepartureTime(seed, true)
-      const inboundTime = buildDepartureTime(seed, false)
       const routeCode = `${origin}-${destination}`
       const routeTitle =
         config.direction === 'gva-to-london'
-          ? `${origin} to ${profile.city} ${profile.name}`
-          : `${origin} to ${destination}`
-      const referenceCode = `${routeCode} · ${toIsoDate(window.outboundDate)} → ${toIsoDate(window.inboundDate)}`
+          ? `${origin} to ${airport.city} ${airport.name}`
+          : `${airport.city} ${airport.name} to ${destination}`
+      const highlights = buildHighlights({
+        airport,
+        inboundCarrier,
+        outboundCarrier,
+        price,
+        stayLengthDays: pair.stayLengthDays,
+      })
+      const referenceCode =
+        `${routeCode} · ${toIsoDate(pair.outboundDate)} → ${toIsoDate(pair.inboundDate)} · ` +
+        `${outboundLeg.flightCode} / ${inboundLeg.flightCode}`
 
       candidates.push({
-        id: `${routeCode}-${toIsoDate(window.outboundDate)}-${window.pattern}`,
+        id: `${routeCode}-${toIsoDate(pair.outboundDate)}-${toIsoDate(pair.inboundDate)}-${outboundCarrier}-${inboundCarrier}`,
         direction: config.direction,
-        origin,
         destination,
-        outboundDate: window.outboundDate,
-        inboundDate: window.inboundDate,
-        outboundTime,
-        inboundTime,
-        pattern: window.pattern,
-        patternLabel: window.pattern === 'thu-sun' ? 'Thu to Sun' : 'Fri to Sun',
-        airline,
-        stops,
-        stopsLabel: direct ? 'Direct' : '1 stop',
-        durationMinutes,
-        durationLabel: formatDuration(durationMinutes),
+        highlights,
+        inbound: inboundLeg,
+        inboundDate: pair.inboundDate,
+        lookupAirportName: airport.name,
+        origin,
+        outbound: outboundLeg,
+        outboundDate: pair.outboundDate,
         price,
         rankScore,
+        referenceCode,
         routeCode,
         routeTitle,
-        lookupAirportName: profile.name,
-        referenceCode,
-        highlights: buildHighlights({
-          comfortBias: profile.comfortBias,
-          direct,
-          pattern: window.pattern,
-          price,
-          profile,
-        }),
+        stayLengthDays: pair.stayLengthDays,
+        stayLengthLabel: `${pair.stayLengthDays} day${pair.stayLengthDays === 1 ? '' : 's'}`,
+        totalFlightMinutes,
+        totalFlightLabel: formatDuration(totalFlightMinutes),
       })
     }
   }
@@ -251,7 +332,7 @@ export function buildSkyscannerUrl(flight: FlightCandidate) {
     inboundDate: toIsoDate(flight.inboundDate),
     adultsv2: '1',
     cabinclass: 'economy',
-    preferDirects: String(flight.stops === 0),
+    preferDirects: 'true',
     outboundaltsenabled: 'false',
     inboundaltsenabled: 'false',
     market: 'UK',
@@ -267,12 +348,25 @@ export function buildKayakUrl(flight: FlightCandidate) {
 }
 
 export function buildGoogleSearchUrl(flight: FlightCandidate) {
-  const query = buildSearchPrompt(flight)
-  return `https://www.google.com/search?q=${encodeURIComponent(query)}`
+  return `https://www.google.com/search?q=${encodeURIComponent(buildSearchPrompt(flight))}`
 }
 
 export function buildSearchPrompt(flight: FlightCandidate) {
-  return `${flight.origin} ${flight.destination} return flight ${toIsoDate(flight.outboundDate)} ${toIsoDate(flight.inboundDate)} ${flight.airline} ${flight.stopsLabel}`
+  return [
+    `${flight.origin} ${flight.destination} direct return flight`,
+    toIsoDate(flight.outboundDate),
+    toIsoDate(flight.inboundDate),
+    `outbound ${flight.outbound.airlineName} ${flight.outbound.flightCode} ${flight.outbound.departureLabel}`,
+    `return ${flight.inbound.airlineName} ${flight.inbound.flightCode} arrives ${flight.inbound.arrivalLabel}`,
+  ].join(' · ')
+}
+
+export function buildAirlineSummary(flight: FlightCandidate) {
+  if (flight.outbound.airlineName === flight.inbound.airlineName) {
+    return flight.outbound.airlineName
+  }
+
+  return `${flight.outbound.airlineName} out · ${flight.inbound.airlineName} back`
 }
 
 export function formatDateLong(date: Date) {
@@ -291,8 +385,12 @@ export function formatDateRange(flight: FlightCandidate) {
   return `${formatShortDate(flight.outboundDate)} to ${formatShortDate(flight.inboundDate)}`
 }
 
-function buildWeekendWindows() {
-  const windows: { inboundDate: Date; outboundDate: Date; pattern: WeekendPattern }[] = []
+export function formatHourLabel(hour: number) {
+  return `${String(hour).padStart(2, '0')}:00`
+}
+
+function buildDatePairs(outboundDays: Weekday[], returnDays: Weekday[]) {
+  const pairs: { inboundDate: Date; outboundDate: Date; stayLengthDays: number }[] = []
   const start = todayUtc()
   const end = addMonthsUtc(start, 12)
 
@@ -301,138 +399,267 @@ function buildWeekendWindows() {
     cursor.getTime() < end.getTime();
     cursor = addDays(cursor, 1)
   ) {
-    const day = cursor.getUTCDay()
-
-    if (day === 4) {
-      windows.push({
-        outboundDate: cursor,
-        inboundDate: addDays(cursor, 3),
-        pattern: 'thu-sun',
-      })
+    if (!outboundDays.includes(toWeekday(cursor))) {
+      continue
     }
 
-    if (day === 5) {
-      windows.push({
+    for (let stayLengthDays = 1; stayLengthDays <= 5; stayLengthDays += 1) {
+      const inboundDate = addDays(cursor, stayLengthDays)
+
+      if (inboundDate.getTime() >= end.getTime()) {
+        continue
+      }
+
+      if (!returnDays.includes(toWeekday(inboundDate))) {
+        continue
+      }
+
+      pairs.push({
+        inboundDate,
         outboundDate: cursor,
-        inboundDate: addDays(cursor, 2),
-        pattern: 'fri-sun',
+        stayLengthDays,
       })
     }
   }
 
-  return windows
+  return pairs
+}
+
+function buildLeg(input: {
+  airport: AirportProfile
+  airportCode: string
+  carrier: AirlineId
+  date: Date
+  destination: string
+  direction: Direction
+  legKind: 'outbound' | 'inbound'
+  origin: string
+}) {
+  const seed = hashString(
+    [
+      input.carrier,
+      input.airportCode,
+      toIsoDate(input.date),
+      input.direction,
+      input.legKind,
+    ].join('|'),
+  )
+  const departureMinutes = buildDepartureMinutes(seed, input.legKind)
+  const durationMinutes =
+    input.airport.shortHaulMinutes +
+    (seed % 16) -
+    Math.round(input.airport.comfortBias * 8)
+  const arrivalMinutes = departureMinutes + durationMinutes
+  const airline = airlineProfiles[input.carrier]
+
+  return {
+    airlineId: input.carrier,
+    airlineName: airline.label,
+    arrivalLabel: formatClock(arrivalMinutes),
+    arrivalMinutes,
+    departureLabel: formatClock(departureMinutes),
+    departureMinutes,
+    durationMinutes,
+    flightCode: `${airline.code} ${100 + (seed % 900)}`,
+    officialLabel: airline.label,
+    officialUrl: buildOfficialAirlineUrl({
+      airportCode: input.airportCode,
+      carrier: input.carrier,
+      direction: input.direction,
+      origin: input.origin,
+    }),
+  }
 }
 
 function buildPrice(input: {
-  direct: boolean
+  airport: AirportProfile
+  inboundCarrier: AirlineId
+  inboundDate: Date
+  outboundCarrier: AirlineId
   outboundDate: Date
-  pattern: WeekendPattern
-  profile: AirportProfile
-  seed: number
+  stayLengthDays: number
 }) {
-  const monthPenalty = seasonalityByMonth[input.outboundDate.getUTCMonth()]
-  const directPremium = input.direct ? 16 : -8
-  const weekendPremium = input.pattern === 'fri-sun' ? 14 : 0
-  const volatility = (input.seed % 61) - 18
-  const shoulderSeasonBonus = input.outboundDate.getUTCMonth() === 4 ? -8 : 0
+  const seasonality =
+    seasonalityByMonth[input.outboundDate.getUTCMonth()] +
+    Math.round(seasonalityByMonth[input.inboundDate.getUTCMonth()] * 0.35)
+  const carrierCost =
+    airlineProfiles[input.outboundCarrier].priceModifier +
+    airlineProfiles[input.inboundCarrier].priceModifier
+  const stayPenalty = input.stayLengthDays >= 4 ? 10 : input.stayLengthDays === 1 ? -6 : 0
+  const volatility =
+    (hashString(
+      `${input.airport.code}|${toIsoDate(input.outboundDate)}|${toIsoDate(input.inboundDate)}|price`,
+    ) %
+      34) -
+    12
+
   const roughPrice =
-    input.profile.priceBase +
-    monthPenalty +
-    directPremium +
-    weekendPremium +
-    volatility +
-    shoulderSeasonBonus
+    input.airport.priceBase +
+    seasonality +
+    carrierCost +
+    stayPenalty +
+    volatility
 
   return clampAndRoundPrice(roughPrice)
 }
 
-function buildDurationMinutes(input: {
-  direct: boolean
-  profile: AirportProfile
-  seed: number
-}) {
-  if (input.direct) {
-    return 82 + Math.round((1 - input.profile.comfortBias) * 16) + (input.seed % 22)
-  }
-
-  return 194 + (input.seed % 138)
-}
-
 function buildRankScore(input: {
-  comfortBias: number
-  direct: boolean
-  durationMinutes: number
-  pattern: WeekendPattern
+  airport: AirportProfile
+  inboundArrivalMinutes: number
+  outboundDepartureMinutes: number
   price: number
   sortMode: SortMode
+  stayLengthDays: number
+  totalFlightMinutes: number
 }) {
-  const stopPenalty = input.direct ? 0 : 72
-  const durationPenalty = Math.round(Math.max(input.durationMinutes - 95, 0) * 0.28)
-  const comfortPenalty = Math.round((1 - input.comfortBias) * 28)
-  const fridayPenalty = input.pattern === 'fri-sun' ? 10 : 0
+  const morningPenalty =
+    input.outboundDepartureMinutes < 7 * 60
+      ? 18
+      : input.outboundDepartureMinutes < 8 * 60
+        ? 6
+        : 0
+  const lateArrivalPenalty = input.inboundArrivalMinutes > 22 * 60 ? 12 : 0
+  const comfortPenalty = Math.round((1 - input.airport.comfortBias) * 30)
+  const durationPenalty = Math.round(Math.max(input.totalFlightMinutes - 200, 0) * 0.18)
+  const stayPenalty = input.stayLengthDays === 1 ? 8 : 0
 
   if (input.sortMode === 'cheapest') {
-    return input.price + stopPenalty + Math.round(durationPenalty * 0.25)
+    return input.price + Math.round(durationPenalty * 0.25)
   }
 
   if (input.sortMode === 'fastest') {
-    return input.durationMinutes + stopPenalty + Math.round(input.price * 0.15)
+    return input.totalFlightMinutes + Math.round(input.price * 0.18)
   }
 
-  return input.price + stopPenalty + durationPenalty + comfortPenalty + fridayPenalty
+  return (
+    input.price +
+    durationPenalty +
+    comfortPenalty +
+    morningPenalty +
+    lateArrivalPenalty +
+    stayPenalty
+  )
 }
 
 function buildHighlights(input: {
-  comfortBias: number
-  direct: boolean
-  pattern: WeekendPattern
+  airport: AirportProfile
+  inboundCarrier: AirlineId
+  outboundCarrier: AirlineId
   price: number
-  profile: AirportProfile
+  stayLengthDays: number
 }) {
-  const highlights: string[] = []
+  const highlights: string[] = ['Direct only']
 
   if (input.price <= 95) {
-    highlights.push('Low fare')
+    highlights.push('Lower fare')
   }
 
-  if (input.direct) {
-    highlights.push('Direct')
+  if (input.outboundCarrier !== input.inboundCarrier) {
+    highlights.push('Mixed airlines')
   }
 
-  if (input.profile.code === 'LCY' || input.profile.code === 'LHR') {
+  if (input.airport.code === 'LHR' || input.airport.code === 'LCY') {
     highlights.push('Stronger airport')
   }
 
-  if (input.pattern === 'thu-sun') {
-    highlights.push('Longer weekend')
-  }
-
-  if (highlights.length === 0) {
-    highlights.push('Worth checking')
+  if (input.stayLengthDays >= 3) {
+    highlights.push('Longer trip')
   }
 
   return highlights
 }
 
-function buildDepartureTime(seed: number, outbound: boolean) {
-  const baseHour = outbound ? 6 : 14
-  const hour = baseHour + ((seed >> (outbound ? 1 : 3)) % 8)
-  const minute = ((seed >> (outbound ? 6 : 9)) % 2) * 30
-
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+function pickCarrier(carriers: AirlineId[], seed: number) {
+  return carriers[seed % carriers.length]
 }
 
-function isDirect(seed: number, directBias: number) {
-  return (seed % 1000) / 1000 < directBias
+function buildOfficialAirlineUrl(input: {
+  airportCode: string
+  carrier: AirlineId
+  direction: Direction
+  origin: string
+}) {
+  if (input.carrier === 'easyjet') {
+    return buildEasyJetUrl(input.origin, input.airportCode, input.direction)
+  }
+
+  if (input.carrier === 'ba') {
+    return buildBritishAirwaysUrl(input.origin, input.airportCode, input.direction)
+  }
+
+  if (input.carrier === 'swiss') {
+    return input.direction === 'gva-to-london'
+      ? 'https://www.swiss.com/lhg/gb/en/o-d/cy-cy/geneva-london'
+      : 'https://www.swiss.com/lhg/gb/en/o-d/cy-cy/london-geneva'
+  }
+
+  if (input.carrier === 'jet2') {
+    return 'https://www.jet2.com/en/flights'
+  }
+
+  return null
 }
 
-function pick<T>(values: T[], seed: number) {
-  return values[seed % values.length]
+function buildEasyJetUrl(origin: string, airportCode: string, direction: Direction) {
+  const airportSlugMap: Record<string, string> = {
+    GVA: 'geneva',
+    LGW: 'london-gatwick',
+    LTN: 'london-luton',
+    SEN: 'london-southend',
+  }
+
+  const originSlug = airportSlugMap[origin]
+  const destinationSlug =
+    direction === 'gva-to-london' ? airportSlugMap[airportCode] : airportSlugMap.GVA
+
+  if (!originSlug || !destinationSlug) {
+    return 'https://www.easyjet.com/en'
+  }
+
+  return `https://www.easyjet.com/en/cheap-flights/${originSlug}/${destinationSlug}`
+}
+
+function buildBritishAirwaysUrl(origin: string, airportCode: string, direction: Direction) {
+  if (direction === 'gva-to-london') {
+    if (origin === 'GVA') {
+      return 'https://www.britishairways.com/content/en-gb/flights/from-geneva'
+    }
+
+    if (airportCode === 'LHR') {
+      return 'https://www.britishairways.com/content/en-gb/flights/from-london-heathrow'
+    }
+
+    if (airportCode === 'LGW') {
+      return 'https://www.britishairways.com/content/en-gb/flights/from-london-gatwick'
+    }
+
+    return 'https://www.britishairways.com/content/en-gb/destinations/london/flights-to-london'
+  }
+
+  return 'https://www.britishairways.com/content/en-gb/destinations/geneva/flights-to-geneva'
+}
+
+function buildDepartureMinutes(seed: number, legKind: 'outbound' | 'inbound') {
+  const startHour = legKind === 'outbound' ? 6 : 9
+  const hourSpan = legKind === 'outbound' ? 12 : 11
+  const hour = startHour + ((seed >> (legKind === 'outbound' ? 2 : 5)) % hourSpan)
+  const minute = ((seed >> (legKind === 'outbound' ? 8 : 11)) % 2) * 30
+  return hour * 60 + minute
+}
+
+function isHourInRange(hour: number, startHour: number, endHour: number) {
+  return hour >= startHour && hour < endHour
 }
 
 function clampAndRoundPrice(value: number) {
-  const bounded = Math.max(52, Math.min(310, value))
+  const bounded = Math.max(55, Math.min(320, value))
   return Math.round(bounded / 5) * 5
+}
+
+function formatClock(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
 function formatDuration(totalMinutes: number) {
@@ -473,6 +700,10 @@ function toIsoDate(date: Date) {
     String(date.getUTCMonth() + 1).padStart(2, '0'),
     String(date.getUTCDate()).padStart(2, '0'),
   ].join('-')
+}
+
+function toWeekday(date: Date): Weekday {
+  return weekdays[(date.getUTCDay() + 6) % 7]
 }
 
 const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
